@@ -1,0 +1,26 @@
+from disnake import Guild
+from disnake.ext.commands import Cog
+
+from bot import OmniGames
+from data import Utils
+
+
+class Events(Cog, name="events.on_guild_update"):
+    def __init__(self, bot: OmniGames):
+        self.bot = bot
+
+    @Cog.listener()
+    @Utils.check_bot_starting()
+    async def on_guild_update(self, before: Guild, after: Guild):
+        """When a guild is updated, update the database"""
+        updates = {}
+        if before.name != after.name:
+            updates["name"] = after.name
+        if f"{before.owner}" != f"{after.owner}":
+            updates["owner"] = f"{after.owner}"
+        if updates:
+            self.bot.main_repo.update_guild(after.id, updates)
+
+
+def setup(bot: OmniGames):
+    bot.add_cog(Events(bot))

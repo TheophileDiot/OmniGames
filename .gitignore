@@ -1,0 +1,7 @@
+**/**/__pycache__
+.idea/
+logs/**
+env/
+.env
+.cache
+count_lines.py
