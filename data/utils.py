@@ -2,6 +2,7 @@ from collections import OrderedDict
 from math import floor
 from re import findall
 from typing import Union, List, Optional
+from unicodedata import normalize
 
 from disnake import (
     ApplicationCommandInteraction,
@@ -15,13 +16,41 @@ from disnake import (
     TextChannel,
     VoiceChannel,
 )
-from disnake.ext.commands import Context, check
+from disnake.ext.commands import check
 from disnake.ext.commands.errors import BadArgument
 from disnake.ext.tasks import loop
 
 from bot import OmniGames
 
 NUM2EMOJI = {1: "1️⃣", 2: "2️⃣", 3: "3️⃣", 4: "4️⃣", 5: "5️⃣", 6: "6️⃣", 7: "7️⃣"}
+LETTER_EMOJIS = {
+    "🇦": "a",
+    "🇧": "b",
+    "🇨": "c",
+    "🇩": "d",
+    "🇪": "e",
+    "🇫": "f",
+    "🇬": "g",
+    "🇭": "h",
+    "🇮": "i",
+    "🇯": "j",
+    "🇰": "k",
+    "🇱": "l",
+    "🇲": "m",
+    "🇳": "n",
+    "🇴": "o",
+    "🇵": "p",
+    "🇶": "q",
+    "🇷": "r",
+    "🇸": "s",
+    "🇹": "t",
+    "🇺": "u",
+    "🇻": "v",
+    "🇼": "w",
+    "🇽": "x",
+    "🇾": "y",
+    "🇿": "z",
+}
 
 
 def check_for_win_fourinarow(board) -> bool:
@@ -118,175 +147,22 @@ class Utils:
             embed=em,
         )
 
-    def get_embed_from_ctx(self, ctx: Context, title: str) -> Embed:
-        em = Embed(
-            colour=self.bot.color,
-            title=title,
-            description=f"Use the command format `{self.get_guild_pre(ctx.message)[0]}{ctx.command.qualified_name} <option>` to view more info about an option.",
-        )
-
-        if self.bot.user.avatar:
-            em.set_thumbnail(url=self.bot.user.avatar.url)
-            em.set_author(
-                name=self.bot.user.name,
-                icon_url=self.bot.user.avatar.url,
-            )
-        else:
-            em.set_author(
-                name=self.bot.user.name,
-            )
-
-        if ctx.guild.icon:
-            em.set_footer(text=ctx.guild.name, icon_url=ctx.guild.icon.url)
-        else:
-            em.set_footer(text=ctx.guild.name)
-
-        cmds = OrderedDict(
-            sorted(
-                {
-                    c.name: {
-                        "brief": c.brief,
-                        "description": c.description,
-                        "aliases": c.aliases,
-                        "usage": c.usage,
-                        "commands": c.commands
-                        if "all_commands" in vars(c).keys() and c.commands
-                        else None,
-                    }
-                    for c in set(ctx.command.commands)
-                }.items()
-            )
-        )
-        for name, cmd in cmds.items():
-            em.add_field(
-                name=f"{cmd['brief']} {name}",
-                value=f"{cmd['description']}"
-                + (
-                    f"\n**Alias"
-                    + ("es" if len(cmd["aliases"]) > 1 else "")
-                    + "**: "
-                    + ", ".join([f"`{a}`" for a in cmd["aliases"]])
-                    if cmd["aliases"]
-                    else ""
-                )
-                + (f"\n**Usage**: `{cmd['usage']}`" if cmd["usage"] else "")
-                + (
-                    f"\n**Sub-commands:** {', '.join([f'`{cmd.name}`' for cmd in cmd['commands']])}"
-                    if cmd["commands"]
-                    else ""
-                ),
-                inline=True,
-            )
-
-        return em
-
     async def parse_duration(
         self,
         _duration: int,
         type_duration: str,
-        source: Union[Context, ApplicationCommandInteraction],
+        source: ApplicationCommandInteraction,
     ) -> Optional[Union[bool, int]]:
         type_duration = self.to_lower(type_duration)
 
         if _duration <= 0:
             try:
-                if isinstance(source, Context):
-                    await source.reply(
-                        f"⚠️ - {source.author.mention} - Please provide a minimum duration greater than 0! `{self.get_guild_pre(source.message)[0]}{f'{source.command.parents[0]}' if source.command.parents else f'help {source.command.qualified_name}'}` to get more help.",
-                        delete_after=15,
-                    )
-                else:
-                    await source.response.send_message(
-                        f"⚠️ - {source.author.mention} - Please provide a minimum duration greater than 0!",
-                        ephemeral=True,
-                    )
+                await source.response.send_message(
+                    f"⚠️ - {source.author.mention} - Please provide a minimum duration greater than 0!",
+                    ephemeral=True,
+                )
             except Forbidden as f:
-                f.text = f"⚠️ - I don't have the right permissions to send messages in the channel {source.channel.mention} (message: `⚠️ - {source.author.mention} - Please provide a minimum duration greater than 0! `{self.get_guild_pre(source.message)[0]}{f'{source.command.parents[0]}' if source.command.parents else f'help {source.command.qualified_name}'}` to get more help.`)!"
-                raise
-
-            return False
-        elif (
-            (
-                source.command.qualified_name
-                if isinstance(source, Context)
-                else source.application_command.qualified_name
-            )
-            == "poll create"
-        ) and (
-            _duration < 600
-            and type_duration == "s"
-            or _duration < 10
-            and type_duration == "m"
-        ):
-            try:
-                if isinstance(source, Context):
-                    await source.reply(
-                        f"⚠️ - {source.author.mention} - Please provide a minimum duration greater or equal to 10 minutes to create a poll! `{self.get_guild_pre(source.message)[0]}{f'{source.command.parents[0]}' if source.command.parents else f'help {source.command.qualified_name}'}` to get more help.",
-                        delete_after=15,
-                    )
-                else:
-                    await source.response.send_message(
-                        f"⚠️ - {source.author.mention} - Please provide a minimum duration greater or equal to 10 minutes to create a poll!",
-                        ephemeral=True,
-                    )
-            except Forbidden as f:
-                f.text = f"⚠️ - I don't have the right permissions to send messages in the channel {source.channel.mention} (message: `⚠️ - {source.author.mention} - Please provide a minimum duration greater than 10 minutes to create a poll! `{self.get_guild_pre(source.message)[0]}{f'{source.command.parents[0]}' if source.command.parents else f'help {source.command.qualified_name}'}` to get more help.`)!"
-                raise
-
-            return False
-        elif (
-            source.command.qualified_name
-            if isinstance(source, Context)
-            else source.application_command.qualified_name
-        ) == "sanction mute add" and (
-            _duration < 600
-            and type_duration == "s"
-            or _duration < 10
-            and type_duration == "m"
-        ):
-            try:
-                if isinstance(source, Context):
-                    await source.reply(
-                        f"⚠️ - {source.author.mention} - Please provide a minimum duration greater or equal to 10 minutes to mute a member! `{self.get_guild_pre(source.message)[0]}{f'{source.command.parents[0]}' if source.command.parents else f'help {source.command.qualified_name}'}` to get more help.",
-                        delete_after=15,
-                    )
-                else:
-                    await source.response.send_message(
-                        f"⚠️ - {source.author.mention} - Please provide a minimum duration greater or equal to 10 minutes to mute a member!",
-                        ephemeral=True,
-                    )
-            except Forbidden as f:
-                f.text = f"⚠️ - I don't have the right permissions to send messages in the channel {source.channel.mention} (message: `⚠️ - {source.author.mention} - Please provide a minimum duration greater than 10 minutes to create a poll! `{self.get_guild_pre(source.message)[0]}{f'{source.command.parents[0]}' if source.command.parents else f'help {source.command.qualified_name}'}` to get more help.`)!"
-                raise
-
-            return False
-        elif (
-            source.command.qualified_name
-            if isinstance(source, Context)
-            else source.application_command.qualified_name
-        ) == "sanction ban" and (
-            _duration < 86400
-            and type_duration == "s"
-            or _duration < 1440
-            and type_duration == "m"
-            or _duration < 24
-            and type_duration == "h"
-            or _duration < 1
-            and type_duration == "d"
-        ):
-            try:
-                if isinstance(source, Context):
-                    await source.reply(
-                        f"⚠️ - {source.author.mention} - Please provide a minimum duration greater or equal to 1 day to ban a member! `{self.get_guild_pre(source.message)[0]}{f'{source.command.parents[0]}' if source.command.parents else f'help {source.command.qualified_name}'}` to get more help.",
-                        delete_after=15,
-                    )
-                else:
-                    await source.response.send_message(
-                        f"⚠️ - {source.author.mention} - Please provide a minimum duration greater or equal to 1 day to ban a member! `{self.get_guild_pre(source.message)[0]}{f'{source.command.parents[0]}' if source.command.parents else f'help {source.command.qualified_name}'}` to get more help.",
-                        ephemeral=True,
-                    )
-            except Forbidden as f:
-                f.text = f"⚠️ - I don't have the right permissions to send messages in the channel {source.channel.mention} (message: `⚠️ - {source.author.mention} - Please provide a minimum duration greater than 10 minutes to create a poll! `{self.get_guild_pre(source.message)[0]}{f'{source.command.parents[0]}' if source.command.parents else f'help {source.command.qualified_name}'}` to get more help.`)!"
+                f.text = f"⚠️ - I don't have the right permissions to send messages in the channel {source.channel.mention} (message: `⚠️ - {source.author.mention} - Please provide a minimum duration greater than 0!"
                 raise
 
             return False
@@ -299,33 +175,10 @@ class Utils:
             return _duration * 3600
         elif type_duration == "d":
             return _duration * 86400
-        else:
-            try:
-                await source.reply(
-                    f"⚠️ - {source.author.mention} - Please provide a valid duration type! `{self.get_guild_pre(source.message)[0]}{f'{source.command.parents[0]}' if source.command.parents else f'help {source.command.qualified_name}'}` to get more help.",
-                    delete_after=15,
-                )
-            except Forbidden as f:
-                f.text = f"⚠️ - I don't have the right permissions to send messages in the channel {source.channel.mention} (message: `⚠️ - {source.author.mention} - Please provide a valid duration type! `{self.get_guild_pre(source.message)[0]}{f'{source.command.parents[0]}' if source.command.parents else f'help {source.command.qualified_name}'}` to get more help.`)!"
-                raise
 
-            return False
+        return False
 
-    def get_guild_pre(self, arg: Union[Message, Member, int]) -> list:
-        try:
-            if isinstance(arg, int):
-                prefix = self.configs[arg]["prefix"]
-            else:
-                prefix = self.configs[arg.guild.id]["prefix"]
-        except AttributeError:
-            if isinstance(arg, int):
-                prefix = self.bot.configs[arg]["prefix"]
-            else:
-                prefix = self.bot.configs[arg.guild.id]["prefix"] or "o!"
-
-        return [prefix, prefix.lower(), prefix.upper()]
-
-    async def get_last_game_message(self, channel: TextChannel) -> Message or None:
+    async def get_last_game_message(self, channel: TextChannel) -> Optional[Message]:
         if (
             "games" in self.bot.configs[channel.guild.id]
             and str(channel.id) in self.bot.configs[channel.guild.id]["games"]
@@ -342,39 +195,37 @@ class Utils:
 
         return None
 
+    async def check_games_category(self, source: ApplicationCommandInteraction) -> bool:
+        if (
+            "games_category" not in self.bot.configs[source.guild.id]
+            or not self.bot.configs[source.guild.id]["games_category"]
+        ):
+            await source.response.send_message(
+                "ℹ️ - Games are not configured on this server", ephemeral=True
+            )
+
+            return False
+        return True
+
     async def check_game_creation(
         self,
-        source: Union[Context, ApplicationCommandInteraction],
+        source: ApplicationCommandInteraction,
         member: Member,
         game: list,
     ) -> TextChannel or None:
-        if isinstance(source, Context):
-            if member.bot:
-                return await source.reply(
-                    f"⚠️ - {source.author.mention} - You cannot start a {' '.join(game)} game against a bot"
-                )
-            elif source.author.id == member.id:
-                return await source.reply(
-                    f"⚠️ - {source.author.mention} - You cannot start a {' '.join(game)} game against yourself"
-                )
-        else:
-            if member.bot:
-                return await source.response.send_message(
-                    f"⚠️ - {source.author.mention} - You cannot start a {' '.join(game)} game against a bot",
-                    ephemeral=True,
-                )
-            elif source.author.id == member.id:
-                return await source.response.send_message(
-                    f"⚠️ - {source.author.mention} - You cannot start a {' '.join(game)} game against yourself",
-                    ephemeral=True,
-                )
+        if member.bot:
+            return await source.response.send_message(
+                f"⚠️ - {source.author.mention} - You cannot start a {' '.join(game)} game against a bot",
+                ephemeral=True,
+            )
+        elif source.author.id == member.id:
+            return await source.response.send_message(
+                f"⚠️ - {source.author.mention} - You cannot start a {' '.join(game)} game against yourself",
+                ephemeral=True,
+            )
 
-        channel_name = (
-            f"{''.join(game)}-{source.author.name.lower()}-{member.name.lower()}"
-        )
-        channel_name_other = (
-            f"{''.join(game)}-{member.name.lower()}-{source.author.name.lower()}"
-        )
+        channel_name = f"{''.join(game)}-{self.normalize_name(source.author.name)}-{self.normalize_name(member.name)}"
+        channel_name_other = f"{''.join(game)}-{self.normalize_name(member.name)}-{self.normalize_name(source.author.name)}"
         channels = {channel.name: channel for channel in source.guild.text_channels}
         channel = None
 
@@ -387,17 +238,19 @@ class Utils:
             message = await self.get_last_game_message(channel)
 
             if message:
-                if isinstance(source, Context):
-                    return await source.reply(
-                        f"ℹ️ - You already have a {' '.join(game)} game against `{member.name}`! {channels[channel_name].mention if channel_name in channels.keys() else channels[channel_name_other].mention}"
-                    )
-                else:
-                    return await source.response.send_message(
-                        f"ℹ️ - You already have a {' '.join(game)} game against `{member.name}`! {channels[channel_name].mention if channel_name in channels.keys() else channels[channel_name_other].mention}",
-                        ephemeral=True,
-                    )
+                return await source.response.send_message(
+                    f"ℹ️ - You already have a {' '.join(game)} game against `{member.name}`! {channels[channel_name].mention if channel_name in channels.keys() else channels[channel_name_other].mention}",
+                    ephemeral=True,
+                )
 
         return channel
+
+    def normalize_name(self, name: str) -> str:
+        return (
+            normalize("NFD", name.replace("-", "_").replace(" ", "_"))
+            .encode("ascii", "ignore")
+            .decode("ascii")
+        )
 
     @staticmethod
     def to_lower(argument):
@@ -418,7 +271,7 @@ class Utils:
 
     @staticmethod
     def check_bot_starting():
-        def predicate(source: Union[Context, ApplicationCommandInteraction]):
+        def predicate(source: ApplicationCommandInteraction):
             return not source.bot.starting
 
         return check(predicate)
@@ -477,7 +330,7 @@ class Utils:
         for member in members:
             bot.user_repo.create_user(guild.id, member.id, f"{member}")
 
-        bot.configs[guild.id] = {"prefix": bot.config_repo.get_prefix(guild.id)}
+        bot.configs[guild.id] = {}
 
         """ GAMES CATEGORY """
 
@@ -505,10 +358,18 @@ class Utils:
             for channel_id, value in game_channels.items():
                 if int(channel_id) in games_channels:
                     bot.configs[guild.id]["games"][channel_id] = {}
+                    if "game_type" in value and value["game_type"] == "hangman":
+                        if "players" not in value:
+                            bot.configs[guild.id]["games"][channel_id]["players"] = {}
+
+                        if "chars" not in value:
+                            bot.configs[guild.id]["games"][channel_id]["chars"] = []
+
+                        if "guesses" not in value:
+                            bot.configs[guild.id]["games"][channel_id]["guesses"] = []
+
                     for k, v in value.items():
-                        if k != "players":
-                            bot.configs[guild.id]["games"][channel_id][k] = v
-                        else:
+                        if k == "players":
                             bot.configs[guild.id]["games"][channel_id][k] = {}
                             for p, m in v.items():
                                 try:
@@ -521,12 +382,21 @@ class Utils:
                                     bot.configs[guild.id]["games"][channel_id][k][
                                         p
                                     ] = None
+                        elif k == "author":
+                            try:
+                                bot.configs[guild.id]["games"][channel_id][
+                                    k
+                                ] = guild.get_member(v) or await guild.fetch_member(v)
+                            except NotFound:
+                                bot.configs[guild.id]["games"][channel_id][k] = None
+                        else:
+                            bot.configs[guild.id]["games"][channel_id][k] = v
                 else:
                     bot.games_repo.remove_game(guild.id, channel_id)
 
     @classmethod
     def check_moderator(cls):
-        def predicate(source: Union[Context, ApplicationCommandInteraction]):
+        def predicate(source: ApplicationCommandInteraction):
             source.bot.last_check = "moderator"
             return cls.is_mod(source.author)
 
@@ -546,6 +416,31 @@ class Utils:
     @staticmethod
     def is_mod(member: Member) -> bool:
         return member.guild_permissions.administrator
+
+    @staticmethod
+    async def members_converter(
+        inter: ApplicationCommandInteraction,
+        argument: str,
+    ) -> Optional[List[Member]]:
+        ids = findall(r"([0-9]{15,20})", argument)
+        result = []
+        for id in ids:
+            try:
+                result.append(
+                    inter.guild.get_member(int(id))
+                    or await inter.guild.fetch_member(int(id))
+                )
+            except NotFound:
+                continue
+
+        if not result or not all(result):
+            await inter.channel.send(
+                f"⚠️ - {inter.author.mention} - None of the members you gave are valid ones!",
+                delete_after=20,
+            )
+            return None
+
+        return result
 
     @staticmethod
     async def mentionable_converter(

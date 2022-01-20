@@ -38,7 +38,7 @@ class Events(Cog, name="events.on_ready"):
         info("OmniGames successfully started")
 
         await self.bot.change_presence(
-            activity=Activity(type=ActivityType.listening, name=f"Ping me for prefix")
+            activity=Activity(type=ActivityType.listening, name=f"Slash commands")
         )
 
         self.bot.starting = False

@@ -19,10 +19,6 @@ class Main:
             self.path,
             args={"name": guild_name, "owner": guild_owner, "present": present},
         )
-        self.model.create(
-            f"{self.path}/config",
-            args={"prefix": "o!"},
-        )
 
     @Utils.resolve_guild_path
     def kicked_from_guild(self, guild_id: int, present: bool = False) -> None:

@@ -1,6 +1,5 @@
 from asyncio import sleep
 from random import choice
-from typing import Union
 
 from disnake import (
     ApplicationCommandInteraction,
@@ -9,8 +8,6 @@ from disnake import (
 )
 from disnake.ext.commands import (
     BucketType,
-    command,
-    Context,
     Cog,
     max_concurrency,
     slash_command,
@@ -23,28 +20,6 @@ from data import NUM2EMOJI
 class FourInARow(Cog, name="misc.fourinarow"):
     def __init__(self, bot: OmniGames) -> None:
         self.bot = bot
-
-    @command(
-        pass_context=True,
-        name="fourinarow",
-        aliases=["4inarow"],
-        brief="4️⃣",
-        description="Starts a four in a row game against another guild member",
-        usage="@member",
-    )
-    @max_concurrency(1, BucketType.member)
-    async def game_fourinarow_command(self, ctx: Context, member: Member):
-        """
-        This command starts a four in a row game against another guild member
-
-        Parameters
-        ----------
-        ctx: :class:`disnake.ext.commands.Context`
-            The command context
-        member: :class:`disnake.Member`
-            The member to play against
-        """
-        await self.handle_fourinarow(ctx, member)
 
     @slash_command(
         name="fourinarow",
@@ -64,31 +39,38 @@ class FourInARow(Cog, name="misc.fourinarow"):
         member: :class:`disnake.Member`
             The member to play against
         """
-        await self.handle_fourinarow(inter, member)
+        if not await self.bot.utils_class.check_games_category(inter):
+            return
 
-    async def handle_fourinarow(
-        self, source: Union[Context, ApplicationCommandInteraction], member: Member
-    ):
-        channel_name = f"4inarow-{source.author.name.lower()}-{member.name.lower()}"
+        channel_name = f"4inarow-{self.bot.utils_class.normalize_name(inter.author.name)}-{self.bot.utils_class.normalize_name(member.name)}"
         channel = await self.bot.utils_class.check_game_creation(
-            source, member, ["4", "in", "a", "row"]
+            inter, member, ["4", "in", "a", "row"]
         )
 
         if not channel:
-            channel = await source.guild.create_text_channel(
+            channel = await inter.guild.create_text_channel(
                 name=channel_name,
                 overwrites={
                     member: PermissionOverwrite(
-                        **{"send_messages": True, "add_reactions": False}
+                        **{
+                            "view_channel": True,
+                            "send_messages": True,
+                            "add_reactions": False,
+                        }
                     ),
-                    source.author: PermissionOverwrite(
-                        **{"send_messages": True, "add_reactions": False}
+                    inter.author: PermissionOverwrite(
+                        **{
+                            "view_channel": True,
+                            "send_messages": True,
+                            "add_reactions": False,
+                        }
                     ),
-                    source.guild.default_role: PermissionOverwrite(
+                    inter.guild.default_role: PermissionOverwrite(
                         **{
                             "view_channel": True,
                             "send_messages": False,
                             "add_reactions": False,
+                            "use_slash_commands": False,
                         }
                     ),
                     self.bot.user: PermissionOverwrite(
@@ -99,12 +81,12 @@ class FourInARow(Cog, name="misc.fourinarow"):
                         }
                     ),
                 },
-                category=self.bot.configs[source.guild.id]["games_category"],
-                reason=f"Creation of the {source.author} vs {member} 4 in a row game channel",
+                category=self.bot.configs[inter.guild.id]["games_category"],
+                reason=f"Creation of the {inter.author} vs {member} 4 in a row game channel",
             )
 
-            await source.channel.send(
-                f"🔴🔴🔴🔴 - The four in a row game {channel.mention} opposing `{source.author.name}` and `{member.name}` has been created - 🔵🔵🔵🔵"
+            await inter.channel.send(
+                f"🔴🔴🔴🔴 - The four in a row game {channel.mention} opposing `{inter.author.name}` and `{member.name}` has been created - 🔵🔵🔵🔵"
             )
 
         board = [
@@ -114,34 +96,31 @@ class FourInARow(Cog, name="misc.fourinarow"):
         nl = "\n"
 
         msg = await channel.send(
-            f"🔴🔴🔴🔴 - {source.author.mention} **VS** {member.mention} - 🔵🔵🔵🔵\n\n**This is `{choice([source.author, member]).name}`'s turn**\n\n{nl.join([''.join(row) for row in board])}"
+            f"🔴🔴🔴🔴 - {inter.author.mention} **VS** {member.mention} - 🔵🔵🔵🔵\n\n**This is `{choice([inter.author, member]).name}`'s turn**\n\n{nl.join([''.join(row) for row in board])}"
         )
 
-        if isinstance(source, ApplicationCommandInteraction):
-            await source.response.send_message(
-                "The game has been created!", ephemeral=True
-            )
+        await inter.response.send_message("The game has been created!", ephemeral=True)
 
-        if "games" not in self.bot.configs[source.guild.id]:
-            self.bot.configs[source.guild.id]["games"] = {
+        if "games" not in self.bot.configs[inter.guild.id]:
+            self.bot.configs[inter.guild.id]["games"] = {
                 str(channel.id): {
                     "game_id": msg.id,
-                    "players": {"p1": source.author, "p2": member},
+                    "players": {"p1": inter.author, "p2": member},
                     "game_type": "4inarow",
                 }
             }
         else:
-            self.bot.configs[source.guild.id]["games"][str(channel.id)] = {
+            self.bot.configs[inter.guild.id]["games"][str(channel.id)] = {
                 "game_id": msg.id,
-                "players": {"p1": source.author, "p2": member},
+                "players": {"p1": inter.author, "p2": member},
                 "game_type": "4inarow",
             }
 
         self.bot.games_repo.create_game(
-            source.guild.id,
+            inter.guild.id,
             channel.id,
             msg.id,
-            self.bot.configs[source.guild.id]["games"][str(channel.id)]["players"],
+            self.bot.configs[inter.guild.id]["games"][str(channel.id)]["players"],
             "4inarow",
         )
 

@@ -3,6 +3,7 @@ from random import choice
 
 from disnake import NotFound, RawMessageDeleteEvent
 from disnake.ext.commands import Cog
+from disnake.ui import Button, View
 
 from bot import OmniGames
 from data import NUM2EMOJI
@@ -50,11 +51,6 @@ class Events(Cog, name="events.on_raw_message_delete"):
                         return
                 except NotFound:
                     pass
-
-            temp_message = await channel.send(
-                "**The game message was deleted, the game will reboot in **`5`** seconds**"
-            )
-            await sleep(5)
 
             try:
                 guild = self.bot.get_guild(
@@ -108,6 +104,17 @@ class Events(Cog, name="events.on_raw_message_delete"):
                 str(payload.channel_id)
             ]["game_type"]
             content = None
+            view = None
+
+            temp_message = await channel.send(
+                "**The game message was deleted, the game will "
+                + (
+                    "reboot in **`5`** seconds**"
+                    if game_type != "hangman"
+                    else "be destroyed in **`5`** seconds**"
+                )
+            )
+            await sleep(5)
 
             if game_type == "4inarow":
                 board = [
@@ -121,9 +128,32 @@ class Events(Cog, name="events.on_raw_message_delete"):
                     if payload.cached_message
                     else f"🔴🔴🔴🔴 - {self.bot.configs[payload.guild_id]['games'][str(payload.channel_id)]['players']['p1'].mention} **VS** {self.bot.configs[payload.guild_id]['games'][str(payload.channel_id)]['players']['p2'].mention} - 🔵🔵🔵🔵\n\n**This is `{choice([self.bot.configs[payload.guild_id]['games'][str(payload.channel_id)]['players']['p1'], self.bot.configs[payload.guild_id]['games'][str(payload.channel_id)]['players']['p2']]).name}`'s turn**\n\n{nl.join([''.join(row) for row in board])}"
                 )
+            elif game_type == "tictactoe":
+                view = View(timeout=None)
+
+                for x in range(3):
+                    for y in range(3):
+                        view.add_item(
+                            Button(
+                                label="\u200b",
+                                custom_id=f"{channel.id}.{x}.{y}",
+                                row=x,
+                            )
+                        )
+
+                content = (
+                    payload.cached_message.content
+                    if payload.cached_message
+                    else f"❌ - {self.bot.configs[payload.guild_id]['games'][str(payload.channel_id)]['players']['p1'].mention} **VS** {self.bot.configs[payload.guild_id]['games'][str(payload.channel_id)]['players']['p2'].mention} - ⭕\n\n**It's `{choice([self.bot.configs[payload.guild_id]['games'][str(payload.channel_id)]['players']['p1'], self.bot.configs[payload.guild_id]['games'][str(payload.channel_id)]['players']['p2']]).name}`'s turn**"
+                )
+            elif game_type == "hangman":
+                del self.bot.configs[payload.guild_id]["games"][str(payload.channel_id)]
+                self.bot.games_repo.remove_game(payload.guild_id, payload.channel_id)
+                await channel.delete()
+                return
 
             if content:
-                msg = await channel.send(content)
+                msg = await channel.send(content, view=view)
                 self.bot.configs[payload.guild_id]["games"][str(payload.channel_id)][
                     "game_id"
                 ] = msg.id
@@ -132,10 +162,12 @@ class Events(Cog, name="events.on_raw_message_delete"):
                 )
                 await temp_message.delete()
 
-                for x in range(1, 8):
-                    await msg.add_reaction(NUM2EMOJI[x])
+                if game_type == "4inarow":
+                    for x in range(1, 8):
+                        await msg.add_reaction(NUM2EMOJI[x])
 
-                await msg.add_reaction("🔄")
+                if game_type in {"4inarow", "tictactoe"}:
+                    await msg.add_reaction("🔄")
 
 
 def setup(bot: OmniGames):

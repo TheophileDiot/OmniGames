@@ -28,6 +28,7 @@ idna==3.3
 msgpack==1.0.3
 multidict==5.2.0
 mypy-extensions==0.4.3
+nose==1.3.7
 packaging==21.3
 pathspec==0.9.0
 pkg_resources==0.0.0
@@ -38,6 +39,8 @@ pyasn1==0.4.8
 pyasn1-modules==0.2.8
 pyparsing==3.0.6
 python-dotenv==0.19.2
+python-randomword-fr==1.0.0
+Random-Word==1.0.7
 requests==2.27.1
 rsa==4.8
 six==1.16.0

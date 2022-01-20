@@ -66,7 +66,7 @@ class OmniGames(Bot):
     def __init__(self, **kwargs):
         """Initialize the bot"""
         super().__init__(
-            command_prefix=Utils.get_guild_pre or BOT_PREFIX,
+            command_prefix="",
             intents=self.get_intents(),
             help_command=None,
             case_insensitive=True,
@@ -75,7 +75,7 @@ class OmniGames(Bot):
             sync_commands_debug=True,
             test_guilds=[872500404540280893]
             if getenv("ENV") == "DEVELOPMENT"
-            else None,
+            else [914948087888363590],
             **kwargs,
         )
 
@@ -114,27 +114,11 @@ class OmniGames(Bot):
 
     """ EVENTS """
 
-    async def on_message_command_error(
-        self, inter: ApplicationCommandInteraction, _error
-    ) -> None:
-        """Override default message command error handler to log errors and prevent the bot from crashing."""
-        await self.handle_error(inter, _error)
-
-    async def on_user_command_error(
-        self, inter: ApplicationCommandInteraction, _error
-    ) -> None:
-        """Override default user command error handler to log errors and prevent the bot from crashing."""
-        await self.handle_error(inter, _error)
-
     async def on_slash_command_error(
         self, inter: ApplicationCommandInteraction, _error
     ) -> None:
         """Override default slash command error handler to log errors and prevent the bot from crashing."""
         await self.handle_error(inter, _error)
-
-    async def on_command_error(self, ctx: Context, _error) -> None:
-        """Override default command error handler to log errors and prevent the bot from crashing."""
-        await self.handle_error(ctx, _error)
 
     async def on_error(self, event, *args, **kwargs):
         error(
@@ -158,11 +142,11 @@ class OmniGames(Bot):
             # Log that the bot had an error
             source = args[0]
 
-            if isinstance(source, Context) or isinstance(source, Member):
+            if isinstance(source, Member):
                 await source.send(
                     f"⚠️ - An error happened, the developer has been informed about this! If you want help contact `Batgregate900#2562`"
                 )
-            elif isinstance(source, ApplicationCommandInteraction):
+            else:
                 await source.response.send_message(
                     f"⚠️ - An error happened, the developer has been informed about this! If you want help contact `Batgregate900#2562`",
                     ephemeral=True,
@@ -183,34 +167,15 @@ class OmniGames(Bot):
                 f"{exc_info()[0]}\n{exc_info()[1]}\n{exc_info()[2]}\n\n{format_exc()}\n\nIn guild `{args[0].guild if args else 'not found'}` (ID: `{args[0].guild.id if args else 'not found'}`)"
             )
 
-    async def on_message(self, message: Message):
-        if (
-            message.is_system()
-            or message.author.bot
-            or not message.guild
-            or self.starting
-        ):
-            return
-
-        prefix = self.utils_class.get_guild_pre(message)
-
-        if message.content.lower().startswith(prefix[0].lower()):
-            await self.process_commands(message)
-
     """ METHOD(S) """
 
-    async def handle_error(
-        self, source: Union[Context, ApplicationCommandInteraction], _error
-    ):
-        if isinstance(source, Context):
-            cmd_name = source.command.qualified_name
-        else:
-            cmd_name = get_qualified_name_from_interaction(source)
+    async def handle_error(self, source: ApplicationCommandInteraction, _error):
+        cmd_name = get_qualified_name_from_interaction(source)
 
         if isinstance(_error, NoPrivateMessage):
             resp = f"⚠️ - this command is deactivated outside of guilds!"
         elif isinstance(_error, MissingRequiredArgument):
-            resp = f"ℹ️ - The `{cmd_name}` command is missing an argument! Missing parameter: `{_error.param.name}`. `{self.utils_class.get_guild_pre(source.author)[0]}{f'{source.command.parents[0]}' if source.command and source.command.parents else f'help {cmd_name}'}` to get more help."
+            resp = f"ℹ️ - The `{cmd_name}` command is missing an argument! Missing parameter: `{_error.param.name}`."
         elif isinstance(_error, MissingPermissions):
             resp = f"⛔ - You do not have the necessary perms to run this command! Required perms: `{', '.join(_error.missing_permissions)}`"
         elif isinstance(_error, MissingAnyRole):
@@ -224,9 +189,9 @@ class OmniGames(Bot):
         elif isinstance(_error, MaxConcurrencyReached):
             resp = f"ℹ️ - The `{cmd_name}` command has too many executions in progress (`{_error.number}` executions), please try again in a few seconds, this command can only be used a maximum of `{_error.number}` times simultaneously."
         elif isinstance(_error, BadArgument):
-            resp = f"⚠️ - Please provide valid arguments! `{self.utils_class.get_guild_pre(source.author)[0]}{f'{source.command.parents[0]}' if source.command and source.command.parents else f'help {cmd_name}'}` to get more help."
+            resp = f"⚠️ - Please provide valid arguments!"
         elif isinstance(_error, BadUnionArgument):
-            resp = f"⚠️ - Please provide valid arguments! The argument `{_error.param.name}` should be within these types: ({', '.join([f'`{c.__name__}`' for c in _error.converters])})! `{self.utils_class.get_guild_pre(source.author)[0]}{f'{source.command.parents[0]}' if source.command and source.command.parents else f'help {cmd_name}'}` to get more help."
+            resp = f"⚠️ - Please provide valid arguments! The argument `{_error.param.name}` should be within these types: ({', '.join([f'`{c.__name__}`' for c in _error.converters])})!"
         elif isinstance(_error, CheckFailure):
             if self.last_check == "moderator":
                 resp = f"⛔ - {source.author.mention} - You must be an administrator of this server to use this command!"
@@ -238,26 +203,10 @@ class OmniGames(Bot):
             raise _error.original
 
         try:
-            if isinstance(source, Context):
-                await source.reply(resp, delete_after=20)
-            else:
-                await source.response.send_message(resp, ephemeral=True)
+            await source.response.send_message(resp, ephemeral=True)
         except Forbidden as f:
             f.text = f"⚠️ - I don't have the right permissions to send messages in the channel {source.channel.mention} (message (replying to {source.author}): `{resp}`)!"
             raise
-
-    async def process_commands(self, message: Message):
-        """This function processes the commands that the user has sent"""
-        await self.wait_until_ready()
-        ctx = await self.get_context(message=message)
-
-        if ctx.command is None:
-            return await ctx.reply(
-                f"ℹ️ - This command doesn't exist or is deactivated! Command: `{message.content[len(self.utils_class.get_guild_pre(message)[0])::]}`",
-                delete_after=15,
-            )
-
-        await self.invoke(ctx)
 
     def load_extensions(self, cogs: Context = None, path: str = "cogs."):
         """Loads the default set of extensions or a seperate one if given"""
