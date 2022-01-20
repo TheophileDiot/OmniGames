@@ -267,6 +267,8 @@ class Hangman(Cog, name="misc.hangman"):
 
                 word = word.strip()
 
+            word = word.lower()
+
             channel_name = f"hangman-{self.bot.utils_class.normalize_name(inter.author.name)}-{hash(word)}"
             channels = {channel.name: channel for channel in inter.guild.text_channels}
             channel = None
