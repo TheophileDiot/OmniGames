@@ -13,7 +13,6 @@ from logging import basicConfig, DEBUG, error, info
 from os import getenv, listdir, makedirs, name, path, system
 from sys import exc_info
 from traceback import format_exc
-from typing import Union
 
 from aiohttp import ClientSession
 from disnake import (
@@ -22,7 +21,6 @@ from disnake import (
     Forbidden,
     Intents,
     Member,
-    Message,
     OptionType,
 )
 from disnake.ext.commands import Bot, Context
@@ -66,7 +64,7 @@ class OmniGames(Bot):
     def __init__(self, **kwargs):
         """Initialize the bot"""
         super().__init__(
-            command_prefix="",
+            command_prefix="¤",
             intents=self.get_intents(),
             help_command=None,
             case_insensitive=True,
@@ -255,7 +253,6 @@ if __name__ == "__main__":
         Model,
         Utils,
         BOT_TOKEN,
-        BOT_PREFIX,
         BOT_COLOR,
         OWNER_ID,
     )
