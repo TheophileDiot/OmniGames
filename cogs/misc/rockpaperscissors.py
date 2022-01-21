@@ -1,5 +1,4 @@
 from asyncio import sleep
-from random import choice
 
 from disnake import (
     ApplicationCommandInteraction,
@@ -12,25 +11,25 @@ from disnake.ext.commands import (
     max_concurrency,
     slash_command,
 )
-from disnake.ui import Button, View
+from disnake.ui import View, Button
 
 from bot import OmniGames
 
 
-class TicTacToe(Cog, name="misc.tictactoe"):
+class RockPaperScissors(Cog, name="misc.rockpaperscissors"):
     def __init__(self, bot: OmniGames) -> None:
         self.bot = bot
 
     @slash_command(
-        name="tictactoe",
-        description="Starts a tic tac toe game against another guild member",
+        name="rockpaperscissors",
+        description="Starts a rock paper scissors game against another guild member",
     )
     @max_concurrency(1, BucketType.member)
-    async def game_tictactoe_slash_command(
+    async def game_rockpaperscissors_slash_command(
         self, inter: ApplicationCommandInteraction, member: Member
     ):
         """
-        This slash command starts a tic tac toe game against another guild member
+        This slash command starts a rock paper scissors game against another guild member
 
         Parameters
         ----------
@@ -42,14 +41,12 @@ class TicTacToe(Cog, name="misc.tictactoe"):
         if not await self.bot.utils_class.check_games_category(inter):
             return
 
-        channel_name = f"tictactoe-{self.bot.utils_class.normalize_name(inter.author.name)}-{self.bot.utils_class.normalize_name(member.name)}"
+        channel_name = f"rockpaperscissors-{self.bot.utils_class.normalize_name(inter.author.name)}-{self.bot.utils_class.normalize_name(member.name)}"
         channel = await self.bot.utils_class.check_game_creation(
-            inter, member, ["tic", "tac", "toe"]
+            inter, member, ["rock", "paper", "scissors"]
         )
 
-        if channel:
-            await channel.send(f"❌ - Creating a new game... - ⭕")
-        else:
+        if not channel:
             channel = await inter.guild.create_text_channel(
                 name=channel_name,
                 overwrites={
@@ -71,8 +68,8 @@ class TicTacToe(Cog, name="misc.tictactoe"):
                         **{
                             "view_channel": True,
                             "send_messages": False,
-                            "use_slash_commands": False,
                             "add_reactions": False,
+                            "use_slash_commands": False,
                         }
                     ),
                     self.bot.user: PermissionOverwrite(
@@ -84,27 +81,24 @@ class TicTacToe(Cog, name="misc.tictactoe"):
                     ),
                 },
                 category=self.bot.configs[inter.guild.id]["games_category"],
-                reason=f"Creation of the {inter.author} vs {member} tic tac toe game channel",
+                reason=f"Creation of the {inter.author} vs {member} rock paper scissors game channel",
             )
 
             await inter.channel.send(
-                f"❌ - The tic tac toe game {channel.mention} opposing `{inter.author.name}` and `{member.name}` has been created - ⭕"
+                f"🪨📄✂️ - The four in a row game {channel.mention} opposing `{inter.author.name}` and `{member.name}` has been created - 🪨📄✂️"
             )
 
         view = View(timeout=None)
-
-        for x in range(3):
-            for y in range(3):
-                view.add_item(
-                    Button(label="\u200b", custom_id=f"{channel.id}.{x}.{y}", row=x)
-                )
-
-        await inter.response.send_message("The game has been created!", ephemeral=True)
+        view.add_item(Button(emoji="🪨", custom_id=f"{channel.id}.rock"))
+        view.add_item(Button(emoji="📄", custom_id=f"{channel.id}.paper"))
+        view.add_item(Button(emoji="✂️", custom_id=f"{channel.id}.scissors"))
 
         msg = await channel.send(
-            f"❌ - {inter.author.mention} **VS** {member.mention} - ⭕\n\n**It's `{choice([inter.author, member]).name}`'s turn**",
+            content=f"🪨📄✂️ - {inter.author.mention} **VS** {member.mention} - ✂️📄🪨\n\n**Choose one:**\n\n`{inter.author.name}` 🪹 🆚 🪹 `{member.name}`",
             view=view,
         )
+
+        await inter.response.send_message("The game has been created!", ephemeral=True)
 
         if "games" not in self.bot.configs[inter.guild.id]:
             self.bot.configs[inter.guild.id]["games"] = {}
@@ -112,7 +106,8 @@ class TicTacToe(Cog, name="misc.tictactoe"):
         self.bot.configs[inter.guild.id]["games"][str(channel.id)] = {
             "game_id": msg.id,
             "players": {"p1": inter.author, "p2": member},
-            "game_type": "tictactoe",
+            "game_type": "rockpaperscissors",
+            "signs": {"p1": None, "p2": None},
         }
 
         self.bot.games_repo.create_game(
@@ -120,7 +115,8 @@ class TicTacToe(Cog, name="misc.tictactoe"):
             channel.id,
             msg.id,
             self.bot.configs[inter.guild.id]["games"][str(channel.id)]["players"],
-            "tictactoe",
+            "rockpaperscissors",
+            dict(self.bot.configs[inter.guild.id]["games"][str(channel.id)]),
         )
 
         await sleep(1)
@@ -129,4 +125,4 @@ class TicTacToe(Cog, name="misc.tictactoe"):
 
 
 def setup(bot: OmniGames):
-    bot.add_cog(TicTacToe(bot))
+    bot.add_cog(RockPaperScissors(bot))

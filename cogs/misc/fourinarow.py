@@ -102,19 +102,13 @@ class FourInARow(Cog, name="misc.fourinarow"):
         await inter.response.send_message("The game has been created!", ephemeral=True)
 
         if "games" not in self.bot.configs[inter.guild.id]:
-            self.bot.configs[inter.guild.id]["games"] = {
-                str(channel.id): {
-                    "game_id": msg.id,
-                    "players": {"p1": inter.author, "p2": member},
-                    "game_type": "4inarow",
-                }
-            }
-        else:
-            self.bot.configs[inter.guild.id]["games"][str(channel.id)] = {
-                "game_id": msg.id,
-                "players": {"p1": inter.author, "p2": member},
-                "game_type": "4inarow",
-            }
+            self.bot.configs[inter.guild.id]["games"] = {}
+
+        self.bot.configs[inter.guild.id]["games"][str(channel.id)] = {
+            "game_id": msg.id,
+            "players": {"p1": inter.author, "p2": member},
+            "game_type": "4inarow",
+        }
 
         self.bot.games_repo.create_game(
             inter.guild.id,

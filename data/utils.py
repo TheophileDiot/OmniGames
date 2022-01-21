@@ -93,7 +93,7 @@ def check_for_win_fourinarow(board) -> bool:
     return False
 
 
-def check_for_win_tictactoe(board: list) -> bool or None:
+def check_for_win_tictactoe(board: list) -> Optional[bool]:
     win = (
         board[0][0] == board[0][1]
         and board[0][1] == board[0][2]
@@ -117,6 +117,24 @@ def check_for_win_tictactoe(board: list) -> bool or None:
         return None
     else:
         return True
+
+
+def check_for_win_rockpaperscissors(player_1: str, player_2: str) -> Optional[int]:
+    if player_1 == player_2:
+        return None
+    else:
+        if player_1 == "🪨" and player_2 == "📄":
+            return 1
+        elif player_1 == "🪨" and player_2 == "✂️":
+            return 0
+        elif player_1 == "📄" and player_2 == "🪨":
+            return 0
+        elif player_1 == "📄" and player_2 == "✂️":
+            return 1
+        elif player_1 == "✂️" and player_2 == "🪨":
+            return 1
+        elif player_1 == "✂️" and player_2 == "📄":
+            return 0
 
 
 class Utils:
@@ -358,15 +376,20 @@ class Utils:
             for channel_id, value in game_channels.items():
                 if int(channel_id) in games_channels:
                     bot.configs[guild.id]["games"][channel_id] = {}
-                    if "game_type" in value and value["game_type"] == "hangman":
-                        if "players" not in value:
-                            bot.configs[guild.id]["games"][channel_id]["players"] = {}
+                    if "game_type" in value:
+                        if value["game_type"] == "hangman":
+                            if "players" not in value:
+                                bot.configs[guild.id]["games"][channel_id][
+                                    "players"
+                                ] = {}
 
-                        if "chars" not in value:
-                            bot.configs[guild.id]["games"][channel_id]["chars"] = []
+                            if "chars" not in value:
+                                bot.configs[guild.id]["games"][channel_id]["chars"] = []
 
-                        if "guesses" not in value:
-                            bot.configs[guild.id]["games"][channel_id]["guesses"] = []
+                            if "guesses" not in value:
+                                bot.configs[guild.id]["games"][channel_id][
+                                    "guesses"
+                                ] = []
 
                     for k, v in value.items():
                         if k == "players":
@@ -389,6 +412,11 @@ class Utils:
                                 ] = guild.get_member(v) or await guild.fetch_member(v)
                             except NotFound:
                                 bot.configs[guild.id]["games"][channel_id][k] = None
+                        elif k == "signs":
+                            bot.configs[guild.id]["games"][channel_id][k] = {
+                                "p1": v["p1"] if "p1" in v else None,
+                                "p2": v["p2"] if "p2" in v else None,
+                            }
                         else:
                             bot.configs[guild.id]["games"][channel_id][k] = v
                 else:

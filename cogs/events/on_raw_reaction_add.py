@@ -131,6 +131,26 @@ class Events(Cog, name="events.on_raw_reaction_add"):
                         )
 
                         await message.add_reaction("🔄")
+                    elif channel.name.startswith("rockpaperscissors-"):
+                        view = View(timeout=None)
+                        view.add_item(Button(emoji="🪨", custom_id=f"{channel.id}.rock"))
+                        view.add_item(
+                            Button(emoji="📄", custom_id=f"{channel.id}.paper")
+                        )
+                        view.add_item(
+                            Button(emoji="✂️", custom_id=f"{channel.id}.scissors")
+                        )
+
+                        await message.edit(
+                            content=f"🪨📄✂️ - {message.mentions[0].mention} **VS** {message.mentions[1].mention} - ✂️📄🪨\n\n**Choose one:**\n\n`{message.mentions[0].name}` 🪹 🆚 🪹 `{message.mentions[1].name}`",
+                            view=view,
+                        )
+
+                        await message.add_reaction("🔄")
+
+                        self.bot.configs[payload.guild_id]["games"][
+                            str(payload.channel_id)
+                        ]["signs"] = {"p1": None, "p2": None}
 
                 return
 
