@@ -73,7 +73,7 @@ class OmniGames(Bot):
             sync_commands_debug=True,
             test_guilds=[872500404540280893]
             if getenv("ENV") == "DEVELOPMENT"
-            else [914948087888363590],
+            else None,
             **kwargs,
         )
 

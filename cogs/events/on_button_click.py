@@ -211,7 +211,7 @@ class Events(Cog, name="events.on_button_click"):
                         )
                     )
 
-                    await interaction.response.edit_message(
+                    await interaction.message.edit(
                         content=f"🪨📄✂️ - {interaction.message.mentions[0].mention} **VS** {interaction.message.mentions[1].mention} - ✂️📄🪨{nl}{nl}{f'🎉 - **The winner is:** `{interaction.message.mentions[winner].name}`! - 🎉' if winner is not None else f'**It{apostroph}s a tie**'}{nl}{nl}`{interaction.message.mentions[0].name}` {self.bot.configs[interaction.guild.id]['games'][str(interaction.channel.id)]['signs']['p1']} 🆚 {self.bot.configs[interaction.guild.id]['games'][str(interaction.channel.id)]['signs']['p2']} `{interaction.message.mentions[1].name}`",
                         view=view,
                     )
