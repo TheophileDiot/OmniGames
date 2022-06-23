@@ -6,7 +6,7 @@ from disnake.ext.commands import Cog
 from disnake.ui import Button, View
 
 from bot import OmniGames
-from data import check_for_win_tictactoe, check_for_win_rockpaperscissors
+from data import check_for_win_tictactoe
 
 
 class Events(Cog, name="events.on_button_click"):
