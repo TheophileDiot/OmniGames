@@ -15,7 +15,7 @@
     ·
     <a href="https://github.com/TheophileDiot/OmniGames/issues" target="_blank">Request Feature</a>
     ·
-    <a href="https://discord.com/api/oauth2/authorize?client_id=932553821643767828&permissions=377957510224&scope=bot%20applications.commands" target="_blank">Invite me</a>
+    <a href="https://discord.com/api/oauth2/authorize?client_id=932553821643767828&permissions=3263552&scope=applications.commands%20bot" target="_blank">Invite me</a>
     <br />
     <a href="https://github.com/TheophileDiot/OmniGames/main/LICENSE"><img alt="License: MIT" src="https://black.readthedocs.io/en/stable/_static/license.svg"></a>
     <a href="https://github.com/psf/black"><img alt="Code style: black" src="https://img.shields.io/badge/code%20style-black-000000.svg"></a>
