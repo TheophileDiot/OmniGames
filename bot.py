@@ -6,11 +6,22 @@
 # email theophile.diot900@gmail.com
 # linting: black
 # -----------------------------------------------------------
-from asyncio import get_event_loop
+from asyncio import get_event_loop, new_event_loop
 from datetime import date
 from itertools import chain
-from logging import basicConfig, DEBUG, error, info
+from logging import (
+    INFO,
+    Formatter,
+    StreamHandler,
+    basicConfig,
+    DEBUG,
+    error,
+    getLogger,
+    info,
+)
+from multiprocessing import Process
 from os import getenv, listdir, makedirs, name, path, system
+from subprocess import PIPE, call
 from sys import exc_info
 from traceback import format_exc
 
@@ -106,6 +117,17 @@ class OmniGames(Bot):
         self.games_repo = Games(self.model, self)
         print("Database successfully initialized.")
         info("Database loaded")
+
+        lavalink = False
+
+        if getenv("internal_lavalink") == "true":
+            process = Process(target=self.start_lavalink)
+            process.start()  # start the process
+            lavalink = True
+
+        if lavalink:
+            print("Lavalink successfully initialized.")
+            info("Lavalink started")
 
         self.configs = {}
         self.color = Colour(BOT_COLOR) or self.user.color
@@ -218,6 +240,14 @@ class OmniGames(Bot):
         info("All cogs loaded")
 
     @staticmethod
+    def start_lavalink():
+        """starts lavalink."""
+        try:
+            call(["java", "-jar", "data/Lavalink.jar"], stdout=PIPE, stderr=PIPE)
+        except Exception:
+            pass
+
+    @staticmethod
     def get_ownerid():
         """Returns the owner id."""
         return getenv("OWNER_ID") or OWNER_ID or 559057271737548810
@@ -230,6 +260,8 @@ class OmniGames(Bot):
             guild_messages=True,
             guild_reactions=True,
             members=True,
+            voice_states=True,
+            message_content=True,
         )
         return intents
 
@@ -265,15 +297,28 @@ if __name__ == "__main__":
 
     basicConfig(
         filename=f"logs/{date.today().strftime('%d-%m-%Y_')}app.log",
-        filemode="a",
+        filemode="w"
+        if getenv("ENV") == "DEVELOPMENT"
+        or not path.exists(f"logs/{date.today().strftime('%d-%m-%Y_')}app.log")
+        else "a",
         format="%(asctime)s - %(levelname)s - %(message)s",
-        datefmt="%d-%m-%y %H:%M:%S",
-        level=DEBUG,
+        datefmt="%d/%m/%Y %H:%M:%S",
+        level=DEBUG if getenv("ENV") == "DEVELOPMENT" else INFO,
     )  # Configure the logging
 
-    system("cls" if name == "nt" else "clear")
+    # set up logging to console
+    console = StreamHandler()
+    console.setLevel(DEBUG if getenv("ENV") == "DEVELOPMENT" else INFO)
+    # set a format which is simpler for console use
+    formatter = Formatter(
+        "%(asctime)s - %(levelname)s - %(message)s", datefmt="%d/%m/%Y %H:%M:%S"
+    )
+    console.setFormatter(formatter)
+    getLogger("").addHandler(console)
+
+    # system("cls" if name == "nt" else "clear")
     print("OmniGames is starting...")
-    loop = get_event_loop()
+    loop = new_event_loop()
     try:
         loop.run_until_complete(OmniGames.setup())  # Starts the bot
     except KeyboardInterrupt:

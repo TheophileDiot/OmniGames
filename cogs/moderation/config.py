@@ -180,11 +180,19 @@ class Moderation(Cog, name="moderation.config"):
                         f"ℹ️ - This guild doesn't have a games category anymore!"
                     )
             else:
-                await source.response.send_message(
-                    f"ℹ️ - The current server's games category is: {self.bot.configs[source.guild.id]['games_category'].mention}"
-                    if "games_category" in self.bot.configs[source.guild.id]
-                    else f"ℹ️ - The server doesn't have a games category yet!"
-                )
+                try:
+                    await source.response.send_message(
+                        f"ℹ️ - The current server's games category is: {self.bot.configs[source.guild.id]['games_category'].mention} ({self.bot.configs[source.guild.id]['games_category'].id})"
+                        if "games_category" in self.bot.configs[source.guild.id]
+                        else f"ℹ️ - The server doesn't have a games category yet!"
+                    )
+                except AttributeError:
+                    self.bot.config_repo.set_games_category(source.guild.id, None)
+                    del self.bot.configs[source.guild.id]["games_category"]
+
+                    await source.response.send_message(
+                        f"ℹ️ - The server doesn't have a games category yet!"
+                    )
         except MissingRequiredArgument as mre:
             raise MissingRequiredArgument(param=mre.param)
         except Exception as e:

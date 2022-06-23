@@ -1,5 +1,4 @@
 from asyncio import sleep
-from hashlib import pbkdf2_hmac
 from unicodedata import normalize
 from typing import List
 
@@ -161,6 +160,8 @@ class Hangman(Cog, name="misc.hangman"):
             await inter.response.send_message(
                 f"✅ - VICTORY! THE WORD WAS GUESSED BY {inter.author}, THE WORD WAS: `{self.bot.configs[inter.guild.id]['games'][str(inter.channel.id)]['words']}`! - ✅"
             )
+            await message.clear_reactions()
+            await message.add_reaction("💥")
         else:
             self.bot.configs[inter.guild.id]["games"][str(inter.channel.id)][
                 "level"
@@ -177,6 +178,8 @@ class Hangman(Cog, name="misc.hangman"):
             await inter.response.send_message(
                 f"ℹ️ - WRONG! `{inter.author.name}` tried guessing the word `{guess}` - ℹ️"
             )
+            await message.clear_reactions()
+            await message.add_reaction("💥")
 
         msg_guesses = message.clean_content.split("\n")[4]
         guesses = [

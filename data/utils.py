@@ -119,24 +119,6 @@ def check_for_win_tictactoe(board: list) -> Optional[bool]:
         return True
 
 
-def check_for_win_rockpaperscissors(player_1: str, player_2: str) -> Optional[int]:
-    if player_1 == player_2:
-        return None
-    else:
-        if player_1 == "🪨" and player_2 == "📄":
-            return 1
-        elif player_1 == "🪨" and player_2 == "✂️":
-            return 0
-        elif player_1 == "📄" and player_2 == "🪨":
-            return 0
-        elif player_1 == "📄" and player_2 == "✂️":
-            return 1
-        elif player_1 == "✂️" and player_2 == "🪨":
-            return 1
-        elif player_1 == "✂️" and player_2 == "📄":
-            return 0
-
-
 class Utils:
     def __init__(self, bot: OmniGames) -> None:
         self.bot = bot

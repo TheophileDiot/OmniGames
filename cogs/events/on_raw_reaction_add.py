@@ -385,6 +385,8 @@ class Events(Cog, name="events.on_raw_reaction_add"):
                     .replace("$", " ")
                 ]
 
+                await message.clear_reaction(reaction)
+
                 if (
                     self.bot.configs[payload.guild_id]["games"][
                         str(payload.channel_id)
@@ -417,8 +419,8 @@ class Events(Cog, name="events.on_raw_reaction_add"):
                         )
                         + f"\n\n{hm_images[self.bot.configs[payload.guild_id]['games'][str(payload.channel_id)]['level']]}\n\n**The word is in `{'English' if self.bot.configs[payload.guild_id]['games'][str(payload.channel_id)]['language'] == 0 else 'French'}`**"
                     )
-
-                await message.clear_reaction(reaction)
+                    await message.clear_reactions()
+                    await message.add_reaction("💥")
 
                 if (
                     len(
