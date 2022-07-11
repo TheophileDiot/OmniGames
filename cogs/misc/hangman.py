@@ -3,8 +3,8 @@ from unicodedata import normalize
 from typing import List
 
 from disnake import (
-    ApplicationCommandInteraction,
     Enum,
+    GuildCommandInteraction,
     Member,
     PermissionOverwrite,
 )
@@ -52,14 +52,14 @@ class Hangman(Cog, name="misc.hangman"):
     )
     async def hangman_slash_command_group(
         self,
-        inter: ApplicationCommandInteraction,
+        inter: GuildCommandInteraction,
     ):
         """
         This slash command group manages the hangman game
 
         Parameters
         ----------
-        inter: :class:`disnake.ext.commands.ApplicationCommandInteraction`
+        inter: :class:`disnake.ext.commands.GuildCommandInteraction`
             The application command interaction
         """
         if not await self.bot.utils_class.check_games_category(inter):
@@ -74,7 +74,7 @@ class Hangman(Cog, name="misc.hangman"):
     @max_concurrency(1, BucketType.channel)
     async def hangman_guess_slash_command(
         self,
-        inter: ApplicationCommandInteraction,
+        inter: GuildCommandInteraction,
         word: str,
     ):
         """
@@ -82,7 +82,7 @@ class Hangman(Cog, name="misc.hangman"):
 
         Parameters
         ----------
-        inter: :class:`disnake.ext.commands.ApplicationCommandInteraction`
+        inter: :class:`disnake.ext.commands.GuildCommandInteraction`
             The application command interaction
         word: :class:`str`
             The word to guess
@@ -215,7 +215,7 @@ class Hangman(Cog, name="misc.hangman"):
     @max_concurrency(1, BucketType.member)
     async def hangman_create_slash_command(
         self,
-        inter: ApplicationCommandInteraction,
+        inter: GuildCommandInteraction,
         members: List[Member] = Param(None, converter=Utils.members_converter),
         all_members: bool = False,
         random: bool = False,
@@ -228,7 +228,7 @@ class Hangman(Cog, name="misc.hangman"):
 
         Parameters
         ----------
-        inter: :class:`disnake.ext.commands.ApplicationCommandInteraction`
+        inter: :class:`disnake.ext.commands.GuildCommandInteraction`
             The application command interaction
         members: :class:`typing.List[disnake.Member]`
             The members to play against

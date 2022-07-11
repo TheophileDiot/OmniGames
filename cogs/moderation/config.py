@@ -2,8 +2,8 @@ from inspect import Parameter
 from typing import List
 
 from disnake import (
-    ApplicationCommandInteraction,
     CategoryChannel,
+    GuildCommandInteraction,
     TextChannel,
 )
 from disnake.ext.commands import (
@@ -31,14 +31,14 @@ class Moderation(Cog, name="moderation.config"):
     )
     async def config_channels_games_category_slash_group(
         self,
-        inter: ApplicationCommandInteraction,
+        inter: GuildCommandInteraction,
     ):
         """
         This slash command group manages the server's games category where all the game channels are created
 
         Parameters
         ----------
-        inter: :class:`disnake.ext.commands.ApplicationCommandInteraction`
+        inter: :class:`disnake.ext.commands.GuildCommandInteraction`
             The application command interaction
         """
         pass
@@ -49,14 +49,14 @@ class Moderation(Cog, name="moderation.config"):
     )
     async def config_channels_games_category_display_slash_command(
         self,
-        inter: ApplicationCommandInteraction,
+        inter: GuildCommandInteraction,
     ):
         """
         This slash command displays the server's games category
 
         Parameters
         ----------
-        inter: :class:`disnake.ext.commands.ApplicationCommandInteraction`
+        inter: :class:`disnake.ext.commands.GuildCommandInteraction`
             The application command interaction
         """
         await self.handle_games_category(inter)
@@ -67,7 +67,7 @@ class Moderation(Cog, name="moderation.config"):
     )
     async def config_channels_games_category_set_slash_command(
         self,
-        inter: ApplicationCommandInteraction,
+        inter: GuildCommandInteraction,
         category: CategoryChannel,
     ):
         """
@@ -75,7 +75,7 @@ class Moderation(Cog, name="moderation.config"):
 
         Parameters
         ----------
-        inter: :class:`disnake.ext.commands.ApplicationCommandInteraction`
+        inter: :class:`disnake.ext.commands.GuildCommandInteraction`
             The application command interaction
         category: :class:`disnake.CategoryChannel` optional
             The category that will be the games category
@@ -88,21 +88,21 @@ class Moderation(Cog, name="moderation.config"):
     )
     async def config_channels_games_category_remove_slash_command(
         self,
-        inter: ApplicationCommandInteraction,
+        inter: GuildCommandInteraction,
     ):
         """
         This slash removes the server's games category
 
         Parameters
         ----------
-        inter: :class:`disnake.ext.commands.ApplicationCommandInteraction`
+        inter: :class:`disnake.ext.commands.GuildCommandInteraction`
             The application command interaction
         """
         await self.handle_games_category(inter, "remove")
 
     async def handle_games_category(
         self,
-        source: ApplicationCommandInteraction,
+        source: GuildCommandInteraction,
         option: str = None,
         games_category: CategoryChannel = None,
     ):

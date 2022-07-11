@@ -3,8 +3,8 @@ from copy import deepcopy
 from logging import debug
 
 from disnake import (
-    ApplicationCommandInteraction,
     ButtonStyle,
+    GuildCommandInteraction,
     Member,
     MessageInteraction,
     PermissionOverwrite,
@@ -29,31 +29,6 @@ class RockPaperScissorsGame(View):
         self.player_1_asks = 0
         self.player_2_choice = None
         self.player_2_asks = 0
-
-    async def check_win(self, interaction: MessageInteraction):
-        if self.player_1_choice == self.player_2_choice:
-            winner = None
-        else:
-            if self.player_1_choice == "🪨" and self.player_2_choice == "📄":
-                winner = 1
-            elif self.player_1_choice == "🪨" and self.player_2_choice == "✂️":
-                winner = 0
-            elif self.player_1_choice == "📄" and self.player_2_choice == "🪨":
-                winner = 0
-            elif self.player_1_choice == "📄" and self.player_2_choice == "✂️":
-                winner = 1
-            elif self.player_1_choice == "✂️" and self.player_2_choice == "🪨":
-                winner = 1
-            elif self.player_1_choice == "✂️" and self.player_2_choice == "📄":
-                winner = 0
-
-        nl = "\n"
-        apostroph = "'"
-
-        await interaction.followup.edit_message(
-            interaction.message.id,
-            content=f"🪨📄✂️ - {self.player_1.mention} **VS** {self.player_2.mention} - ✂️📄🪨{nl}{nl}{f'🎉 - **The winner is:** `{self.player_2.name if winner else self.player_1.name}`! - 🎉' if winner is not None else f'**It{apostroph}s a tie**'}{nl}{nl}`{self.player_1.name}` {self.player_1_choice} 🆚 {self.player_2_choice} `{self.player_2.name}`",
-        )
 
     async def handle_sign(self, interaction: MessageInteraction):
         if interaction.author == self.player_1:
@@ -84,24 +59,53 @@ class RockPaperScissorsGame(View):
         )
 
         if self.player_1_choice is not None and self.player_2_choice is not None:
-            await self.check_win(interaction)
+            if self.player_1_choice == self.player_2_choice:
+                winner = None
+            else:
+                if self.player_1_choice == "🪨" and self.player_2_choice == "📄":
+                    winner = 1
+                elif self.player_1_choice == "🪨" and self.player_2_choice == "✂️":
+                    winner = 0
+                elif self.player_1_choice == "📄" and self.player_2_choice == "🪨":
+                    winner = 0
+                elif self.player_1_choice == "📄" and self.player_2_choice == "✂️":
+                    winner = 1
+                elif self.player_1_choice == "✂️" and self.player_2_choice == "🪨":
+                    winner = 1
+                elif self.player_1_choice == "✂️" and self.player_2_choice == "📄":
+                    winner = 0
 
-    @button(emoji="🪨", style=ButtonStyle.secondary)
+            nl = "\n"
+            apostroph = "'"
+
+            for child in self.children:
+                if child.style == ButtonStyle.secondary:
+                    child.disabled = True
+                else:
+                    child.disabled = False
+
+            await interaction.followup.edit_message(
+                interaction.message.id,
+                content=f"🪨📄✂️ - {self.player_1.mention} **VS** {self.player_2.mention} - ✂️📄🪨{nl}{nl}{f'🎉 - **The winner is:** `{self.player_2.name if winner else self.player_1.name}`! - 🎉' if winner is not None else f'**It{apostroph}s a tie**'}{nl}{nl}`{self.player_1.name}` {self.player_1_choice} 🆚 {self.player_2_choice} `{self.player_2.name}`",
+                view=self,
+            )
+
+    @button(emoji="🪨", custom_id="rock", style=ButtonStyle.secondary)
     async def rock(self, _: Button, interaction: MessageInteraction):
         await self.handle_sign(interaction)
 
-    @button(emoji="📄", style=ButtonStyle.secondary)
+    @button(emoji="📄", custom_id="paper", style=ButtonStyle.secondary)
     async def paper(self, _: Button, interaction: MessageInteraction):
         await self.handle_sign(interaction)
 
-    @button(emoji="✂️", style=ButtonStyle.secondary)
+    @button(emoji="✂️", custom_id="scissors", style=ButtonStyle.secondary)
     async def scissors(self, _: Button, interaction: MessageInteraction):
         await self.handle_sign(interaction)
 
-    @button(emoji="🔄", style=ButtonStyle.secondary)
+    @button(emoji="🔄", style=ButtonStyle.primary, row=1)
     async def reset(self, _: Button, interaction: MessageInteraction):
         if interaction.author == self.player_1:
-            if self.player_1_choice != 2:
+            if self.player_1_asks != 2:
                 self.player_1_asks = 2
             else:
                 self.player_1_asks = 0
@@ -113,7 +117,7 @@ class RockPaperScissorsGame(View):
                     ephemeral=True,
                 )
         elif interaction.author == self.player_2:
-            if self.player_2_choice != 2:
+            if self.player_2_asks != 2:
                 self.player_2_asks = 2
             else:
                 self.player_2_asks = 0
@@ -135,7 +139,7 @@ class RockPaperScissorsGame(View):
             ephemeral=True,
         )
         await interaction.channel.send(
-            f"{interaction.author} asked to reset the game", delete_after=20
+            f"`{interaction.author}` asked to reset the game", delete_after=20
         )
 
         if self.player_1_asks == 2 and self.player_2_asks == 2:
@@ -146,10 +150,10 @@ class RockPaperScissorsGame(View):
 
             await interaction.channel.send("The game has been reset", delete_after=20)
 
-    @button(emoji="💥", style=ButtonStyle.secondary)
+    @button(emoji="💥", style=ButtonStyle.danger, row=1, disabled=True)
     async def delete(self, _: Button, interaction: MessageInteraction):
         if interaction.author == self.player_1:
-            if self.player_1_choice != 2:
+            if self.player_1_asks != 2:
                 self.player_1_asks = 2
             else:
                 self.player_1_asks = 0
@@ -161,7 +165,7 @@ class RockPaperScissorsGame(View):
                     ephemeral=True,
                 )
         elif interaction.author == self.player_2:
-            if self.player_2_choice != 2:
+            if self.player_2_asks != 2:
                 self.player_2_asks = 2
             else:
                 self.player_2_asks = 0
@@ -182,7 +186,9 @@ class RockPaperScissorsGame(View):
             content=f"You asked to delete the game",
             ephemeral=True,
         )
-        await interaction.channel.send(f"{interaction.author} asked to delete the game")
+        await interaction.channel.send(
+            f"`{interaction.author}` asked to delete the game"
+        )
 
         if self.player_1_asks == 2 and self.player_2_asks == 2:
             self.stop()
@@ -203,14 +209,14 @@ class RockPaperScissors(Cog, name="misc.rockpaperscissors"):
     )
     @max_concurrency(1, BucketType.member)
     async def game_rockpaperscissors_slash_command(
-        self, inter: ApplicationCommandInteraction, member: Member
+        self, inter: GuildCommandInteraction, member: Member
     ):
         """
         This slash command starts a rock paper scissors game against another guild member
 
         Parameters
         ----------
-        inter: :class:`disnake.ext.commands.ApplicationCommandInteraction`
+        inter: :class:`disnake.ext.commands.GuildCommandInteraction`
             The application command interaction
         member: :class:`disnake.Member`
             The member to play against

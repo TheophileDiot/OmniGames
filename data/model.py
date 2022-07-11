@@ -1,12 +1,13 @@
 from collections import OrderedDict
 from os import getenv
-from firebase_admin import credentials, db, initialize_app
+from firebase_admin import credentials, db, initialize_app, storage
 
-from data.constants import FIREBASE_DATABASEURL
+from data.constants import FIREBASE_DATABASEURL, FIREBASE_STORAGEBUCKET
 
 
 class Model:
-    ref = None
+    ref: db = None
+    bucket: storage = None
 
     @classmethod
     def setup(self):
@@ -26,11 +27,16 @@ class Model:
         )
         initialize_app(
             cred,
-            {"databaseURL": FIREBASE_DATABASEURL or getenv("FIREBASE_DATABASEURL")},
+            {
+                "databaseURL": FIREBASE_DATABASEURL or getenv("FIREBASE_DATABASEURL"),
+                "storageBucket": FIREBASE_STORAGEBUCKET
+                or getenv("FIREBASE_STORAGEBUCKET"),
+            },
         )
 
         # Get a reference to the database service
         self.ref = db.reference("dev/" if getenv("ENV") == "DEVELOPMENT" else "/")
+        self.bucket = storage.bucket()
         return self
 
     @classmethod
@@ -51,3 +57,17 @@ class Model:
     @classmethod
     def get(self, path: str) -> OrderedDict:
         return self.ref.child(path).get() or OrderedDict()
+
+    @classmethod
+    def download(self, path: str) -> bytes:
+        return self.bucket.blob(path).download_as_bytes()
+
+    @classmethod
+    def delete_storage(self, path: str) -> bytes:
+        return self.bucket.blob(path).delete()
+
+    @classmethod
+    def upload(self, path: str, file_obj) -> None:
+        return self.bucket.blob(path).upload_from_file(
+            file_obj, content_type="image/jpeg"
+        )
