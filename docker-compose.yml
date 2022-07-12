@@ -17,7 +17,7 @@ services:
 
   lavalink:
     build: lavalink
-    container_name: lavalink
+    container_name: omnigames-lavalink
     restart: always
     volumes:
       - ./lavalink/logs:/opt/Lavalink/logs
