@@ -130,6 +130,8 @@ class OmniGames(Bot):
             info("Lavalink started")
 
         self.configs = {}
+        self.djs = {}
+        self.playlists = {}
         self.color = Colour(BOT_COLOR) or self.user.color
 
     """ EVENTS """

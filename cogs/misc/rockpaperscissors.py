@@ -1,6 +1,4 @@
 from asyncio import sleep
-from copy import deepcopy
-from logging import debug
 
 from disnake import (
     ButtonStyle,

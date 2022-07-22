@@ -1,6 +1,4 @@
-from time import time
-
-from disnake import Member, PermissionOverwrite, VoiceState
+from disnake import Member, VoiceState
 from disnake.ext.commands import Cog
 
 from data import Utils
