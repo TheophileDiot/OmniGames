@@ -64,7 +64,7 @@ class Monopoly(Cog, name="misc.monopoly"):
         ----------
         inter: :class:`disnake.ext.commands.GuildCommandInteraction`
             The application command interaction
-        members: :class:`typing.List[disnake.Member]`
+        members: :class:`disnake.Member`
             The member corresponding to the Monopoly player (if not specified then display your information)
         """
         if (
@@ -179,7 +179,7 @@ class Monopoly(Cog, name="misc.monopoly"):
         if "games" not in self.bot.configs[inter.guild.id]:
             self.bot.configs[inter.guild.id]["games"] = {}
 
-        members.extend([inter.author])
+        members.append(inter.author)
 
         msg = await channel.send("💰 - Creating the game... - 💰")
         monopoly_game = MonopolyGame(self.bot, members, msg)

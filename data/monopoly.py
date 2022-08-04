@@ -6,7 +6,7 @@ from math import ceil
 from random import sample, randint, shuffle
 from requests import get
 from re import findall
-from typing import Iterator, Union, Any, Optional
+from typing import Iterator, List, Union, Any, Optional
 
 from PIL import Image, ImageDraw, ImageOps, JpegImagePlugin, PngImagePlugin
 from disnake import (
@@ -1159,7 +1159,7 @@ board_places_houses: dict = {
     },
 }
 
-monopoly_families: list[list[int]] = [
+monopoly_families: List[List[int]] = [
     [1, 3],
     [6, 8, 9],
     [11, 13, 14],
@@ -1188,7 +1188,7 @@ def throw_dice() -> dict:
 
 class MonopolyGame:
     bot: OmniGames
-    participants: list[Player]
+    participants: List[Player]
     properties: dict
     green_house: PngImagePlugin.PngImageFile
     hotel: PngImagePlugin.PngImageFile
@@ -1202,10 +1202,10 @@ class MonopolyGame:
     def __init__(
         self,
         bot: OmniGames,
-        participants: Union[list[Member], list[Player]],
+        participants: Union[List[Member], List[Player]],
         game_message: Message,
-        community_chest_cards: list[SpecialCard] = None,
-        chance_cards: list[SpecialCard] = None,
+        community_chest_cards: List[SpecialCard] = None,
+        chance_cards: List[SpecialCard] = None,
         properties: dict = None,
         board: bytes = None,
         current_turn: int = 0,
@@ -1219,7 +1219,7 @@ class MonopolyGame:
         self.hotel = Image.open(BytesIO(self.bot.games_repo.download_monopoly_hotel()))
 
         if isinstance(participants[0], Member):
-            dices: list[dict] = []
+            dices: List[dict] = []
 
             for x in range(len(participants)):
                 dice = throw_dice()
@@ -1228,7 +1228,7 @@ class MonopolyGame:
             dices = sorted(dices, key=lambda d: d["d1"] + d["d2"], reverse=True)
             shuffle(participants)
 
-            members: list[Player] = []
+            members: List[Player] = []
             mask: Image = Image.new("L", (128, 128), 0)
             draw: ImageDraw = ImageDraw.Draw(mask)
             draw.ellipse((0, 0, 128, 128), fill=255)  # draw the ellipse
@@ -1242,7 +1242,7 @@ class MonopolyGame:
                         avatar_bytes: BytesIO = BytesIO()
                         avatar.save(avatar_bytes, transparency=0, format="PNG")
                         avatar = Image.open(avatar_bytes)
-                    
+
                     avatar = avatar.convert("RGBA")
 
                     bg = Image.new(
@@ -1384,7 +1384,7 @@ class MonopolyGame:
         board_bytes.seek(0)
         return board_bytes
 
-    def get_players(self) -> list[Player]:
+    def get_players(self) -> List[Player]:
         return self.participants
 
     def get_player(self, p_id: int = None, member: Member = None) -> Optional[Player]:
@@ -1402,7 +1402,7 @@ class MonopolyGame:
 
     def get_player_embed(self, p_id: int) -> Embed:
         player: Player = self.participants[p_id]
-        properties: list[Case] = [
+        properties: List[Case] = [
             p for p in self.properties.values() if p.owner == p_id
         ]
         em = Embed(
@@ -1427,7 +1427,7 @@ class MonopolyGame:
         msg: Message = None
 
         while in_turn:
-            properties: list[Case] = [
+            properties: List[Case] = [
                 p for p in self.properties.values() if p.owner == self.current_turn
             ]
             view: View = View(timeout=None)
@@ -1774,10 +1774,10 @@ class MonopolyGame:
                             embed=em_houses1, ephemeral=True
                         )
             elif interaction.component.custom_id == "monopoly_buy_houses":
-                families: list[int] = [
+                families: List[int] = [
                     p.location for p in properties if isinstance(p, Property)
                 ]
-                compatible_families: list[int] = [
+                compatible_families: List[int] = [
                     x
                     for x in range(len(monopoly_families))
                     if monopoly_families[x] in families
@@ -1791,7 +1791,7 @@ class MonopolyGame:
                         await interaction.response.send_message(content, ephemeral=True)
                     continue
 
-                family_properties: list[list[int]] = [
+                family_properties: List[List[int]] = [
                     monopoly_families[x] for x in compatible_families
                 ]
 
@@ -1819,7 +1819,7 @@ class MonopolyGame:
                         )
                         em.description += "\n\n*🔙 - Return to main menu - 🔙*"
 
-                        used_emojies: list[str] = ["🔙"]
+                        used_emojies: List[str] = ["🔙"]
                         for x in range(1, len(family_properties) + 1):
                             view.add_item(
                                 Button(
@@ -1890,12 +1890,12 @@ class MonopolyGame:
                                 buying_houses = False
                                 continue
 
-                            family: list[int] = family_properties[
+                            family: List[int] = family_properties[
                                 int(temp_interaction.component.custom_id.split("_")[1])
                                 - 1
                             ]
                     else:
-                        family: list[int] = family_properties[0]
+                        family: List[int] = family_properties[0]
 
                     if (
                         self.participants[self.current_turn].balance
@@ -1923,7 +1923,7 @@ class MonopolyGame:
                         em.description += f"\n\n*🏘️ - All family properties at once (`${self.properties[family[0]].houses_price * len(family)}`) - 🏘️*"
                         em.description += "\n\n*🔙 - Return to the last menu - 🔙*"
 
-                        used_emojies: list[str] = ["🔙"]
+                        used_emojies: List[str] = ["🔙"]
                         for x in range(1, len(family) + 1):
                             view.add_item(
                                 Button(
@@ -2060,7 +2060,7 @@ class MonopolyGame:
 
                 msg = None
             elif interaction.component.custom_id == "monopoly_buy_mortgaged":
-                mortgaged_properties: list[Case] = [
+                mortgaged_properties: List[Case] = [
                     p for p in properties if p.mortgaged
                 ]
 
@@ -2079,7 +2079,7 @@ class MonopolyGame:
                 buying_back: bool = True
                 while buying_back:
                     content = f"📜 - Which mortgaged property(ies) would you like to buy back ? - 📜\n\n*You have 1 minute to make your choice*"
-                    options: list[SelectOption] = []
+                    options: List[SelectOption] = []
 
                     for m_p in mortgaged_properties:
                         options.append(
@@ -2275,7 +2275,7 @@ class MonopolyGame:
     async def auction(self, p_id: int, msg: Message = None):
         to_auction: Case = self.properties[p_id]
         bet: int = ceil(to_auction.price * 0.75)
-        players: list[dict] = [
+        players: List[dict] = [
             {"player": p, "bet": bet, "passed": False}
             for p in self.participants
             if p.id != self.current_turn
@@ -2541,23 +2541,23 @@ class MonopolyGame:
                 em.title = f"**{self.participants[p_id].name} - You don't have enough money to pay**"
                 em.description = f"**Which properties do you want to mortgage ?**\n\n**You can also sell houses (if you have any) (houses should be sold fairly among families)**\n\n**Your money →** `${self.participants[p_id].balance}` 🆚 `${to_pay}` **← What you owe**\n\n*You have 3 minutes to make your choice (otherwise you will be automatically bankrupted)*"
 
-                properties: list[Case] = [
+                properties: List[Case] = [
                     p
                     for p in self.properties.values()
                     if p.owner == p_id and not p.mortgaged
                 ]
-                options: list[SelectOption] = []
-                families: list[int] = [
+                options: List[SelectOption] = []
+                families: List[int] = [
                     p.location
                     for p in properties
                     if not p.mortgaged and isinstance(p, Property)
                 ]
-                compatible_families: list[int] = [
+                compatible_families: List[int] = [
                     x
                     for x in range(len(monopoly_families))
                     if monopoly_families[x] in families
                 ]
-                family_properties: list[list[int]] = []
+                family_properties: List[List[int]] = []
                 family_properties_chained: Iterator[int] = []
 
                 if compatible_families:
@@ -2677,11 +2677,11 @@ class MonopolyGame:
                         continue
 
                     await temp_interaction.response.defer()
-                    white_list: list[str] = []
-                    rejected_values: list[str] = []
+                    white_list: List[str] = []
+                    rejected_values: List[str] = []
 
                     for value in temp_interaction.values:
-                        value_split: list[str] = []
+                        value_split: List[str] = []
 
                         if value not in white_list:
                             if "house" in value or "all" in value:
@@ -2692,7 +2692,7 @@ class MonopolyGame:
                                     self.properties[number].location
                                     in family_properties_chained
                                 ):
-                                    family: list[int] = family_properties[
+                                    family: List[int] = family_properties[
                                         [
                                             self.properties[number].location in f
                                             for f in family_properties
@@ -2807,7 +2807,7 @@ class MonopolyGame:
                 else "the bank"
             )
         else:
-            properties: list[Case] = [
+            properties: List[Case] = [
                 p for p in self.properties.values() if p.owner == player_id
             ]
 
@@ -2952,7 +2952,7 @@ class MonopolyGame:
             else:
                 await self.move(11, exact=True)
         elif card.id in (4, 11):
-            properties: list[Property] = [
+            properties: List[Property] = [
                 p
                 for p in self.properties.values()
                 if isinstance(p, Property) and p.owner == self.current_turn
@@ -3063,7 +3063,7 @@ class MonopolyGame:
             self.participants[self.current_turn].in_jail = True
             self.participants[self.current_turn].location = 10
 
-        locations: list[int] = [p.location for p in self.participants]
+        locations: List[int] = [p.location for p in self.participants]
         players_avatar: dict = {}
         back_im = self.default_board.copy()
 
@@ -3267,20 +3267,20 @@ class MonopolyGame:
                         self.properties[new_location].houses == 0
                         and not self.properties[new_location].hotel
                     ):
-                        families: list[int] = [
+                        families: List[int] = [
                             p.location
                             for p in self.properties.values()
                             if isinstance(p, Property)
                             and p.owner == self.properties[new_location].owner
                         ]
-                        compatible_families: list[int] = [
+                        compatible_families: List[int] = [
                             x
                             for x in range(len(monopoly_families))
                             if monopoly_families[x] in families
                         ]
 
                         if compatible_families:
-                            family_properties: list[list[int]] = [
+                            family_properties: List[List[int]] = [
                                 monopoly_families[x] for x in compatible_families
                             ]
 
