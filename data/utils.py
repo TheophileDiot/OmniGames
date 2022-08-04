@@ -315,6 +315,14 @@ class Utils:
                 int(games_category)
             )
 
+        """ MUSIC MISC """
+
+        bot.playlists[guild.id] = []
+
+        bot.djs[guild.id] = [
+            int(k) for k in bot.config_repo.get_djs(guild.id).keys()
+        ]  # Initialize djs list for every guilds
+
         """ GAMES """
 
         game_channels = bot.games_repo.get_game_channels(guild.id)
