@@ -1,12 +1,13 @@
 from asyncio import sleep
 from random import choice
+from google.api_core.exceptions import NotFound as google_NotFound
 
-from disnake import NotFound, RawReactionActionEvent
+from disnake import Embed, File, NotFound, RawReactionActionEvent
 from disnake.ext.commands import Cog
 from disnake.ui import Button, View
 
 from bot import OmniGames
-from cogs.misc.hangman import hm_images
+from cogs.misc.pendu import hm_images
 from data import check_for_win_fourinarow, LETTER_EMOJIS, NUM2EMOJI, Utils
 
 
@@ -80,6 +81,13 @@ class Events(Cog, name="events.on_raw_reaction_add"):
                     self.bot.games_repo.remove_game(
                         payload.guild_id, payload.channel_id
                     )
+
+                    if channel.name.startswith("monopoly-"):
+                        try:
+                            self.bot.games_repo.delete_monopoly_game(channel.id)
+                        except google_NotFound:
+                            pass
+
                     await channel.delete()
 
                 return
@@ -204,20 +212,13 @@ class Events(Cog, name="events.on_raw_reaction_add"):
                     await message.edit(
                         content=f"🔴🔴🔴🔴 - {message.mentions[0].mention} **VS** {message.mentions[1].mention} - 🔵🔵🔵🔵\n\n**THE WINNER IS:** `{player_turn}`!\n\n{nl.join([''.join(row) for row in board])}"
                     )
-                    await message.add_reaction("💥")
-                    return await message.add_reaction("🔄")
+                    await message.add_reaction("🔄")
+                    return await message.add_reaction("💥")
 
                 await message.edit(
                     content=f"🔴🔴🔴🔴 - {message.mentions[0].mention} **VS** {message.mentions[1].mention} - 🔵🔵🔵🔵\n\n**It's `{message.mentions[0 if player_turn == message.mentions[1].name else 1].name}`'s turn**\n\n{nl.join([''.join(row) for row in board])}"
                 )
             elif channel.name.startswith("hangman-"):
-                if reaction.name not in list(LETTER_EMOJIS.keys()) + ["➡️", "⬅️"]:
-                    await message.remove_reaction(reaction, payload.member)
-                    return await channel.send(
-                        f"⛔ - {payload.member.mention} - Please react with only the given reactions",
-                        delete_after=5,
-                    )
-
                 if (
                     not self.bot.configs[payload.guild_id]["games"][
                         str(payload.channel_id)
@@ -257,7 +258,7 @@ class Events(Cog, name="events.on_raw_reaction_add"):
                         delete_after=10,
                     )
 
-                if "GUESSED:**" in message.clean_content.split(" "):
+                if "GUESSED:**" in message.embeds[0].description.split(" "):
                     await message.remove_reaction(reaction, payload.member)
                     return await channel.send(
                         f"⛔ - {payload.member.mention} - The game is over, you can't guess more words or characters",
@@ -374,7 +375,7 @@ class Events(Cog, name="events.on_raw_reaction_add"):
                     "chars"
                 ].append(letter)
 
-                msg_guesses = message.clean_content.split("\n")[4]
+                msg_guesses = message.embeds[0].description.split("\n")[2]
                 guesses = [
                     char
                     for char in msg_guesses[
@@ -385,39 +386,85 @@ class Events(Cog, name="events.on_raw_reaction_add"):
                     .replace("$", " ")
                 ]
 
+                em = Embed(
+                    color=self.bot.color,
+                    title="💬 - **HANGMAN GAME** - 💬",
+                    description=f"**PARTICIPANT{'S' if len(self.bot.configs[payload.guild_id]['games'][str(payload.channel_id)]['players']) > 1 else ''}:** {', '.join([f'`{member.name}`' for member in self.bot.configs[payload.guild_id]['games'][str(payload.channel_id)]['players'].values()]) if not self.bot.configs[payload.guild_id]['games'][str(payload.channel_id)]['all'] else '`All server members`'}",
+                )
+
+                if (
+                    "author"
+                    in self.bot.configs[payload.guild_id]["games"][
+                        str(payload.channel_id)
+                    ]
+                    and self.bot.configs[payload.guild_id]["games"][
+                        str(payload.channel_id)
+                    ]["author"]
+                    and self.bot.configs[payload.guild_id]["games"][
+                        str(payload.channel_id)
+                    ]["author"].avatar
+                ):
+                    em.set_author(
+                        name=f"{self.bot.configs[payload.guild_id]['games'][str(payload.channel_id)]['author']}",
+                        icon_url=self.bot.configs[payload.guild_id]["games"][
+                            str(payload.channel_id)
+                        ]["author"].avatar.url,
+                    )
+                else:
+                    em.set_author(
+                        name=f"{self.bot.configs[payload.guild_id]['games'][str(payload.channel_id)]['author']}"
+                    )
+
                 if (
                     self.bot.configs[payload.guild_id]["games"][
                         str(payload.channel_id)
                     ]["level"]
                     < 6
                 ):
-                    await message.edit(
-                        content=f"💬 - **HANGMAN GAME** - 💬\n\n**PARTICIPANT{'S' if len(self.bot.configs[payload.guild_id]['games'][str(payload.channel_id)]['players']) > 1 else ''}:** {', '.join([f'`{member.name}`' for member in self.bot.configs[payload.guild_id]['games'][str(payload.channel_id)]['players'].values()]) if not self.bot.configs[payload.guild_id]['games'][str(payload.channel_id)]['all'] else '`All members of the server`'}\n\n**WORD TO GUESS:** `{' '.join([guesses[x] if self.bot.configs[payload.guild_id]['games'][str(payload.channel_id)]['normal_words'][x] != letter else letter for x in range(len(self.bot.configs[payload.guild_id]['games'][str(payload.channel_id)]['words']))])}`\n\n**Characters used:** {', '.join([f'`{letter}`' for letter in self.bot.configs[payload.guild_id]['games'][str(payload.channel_id)]['chars']])}"
-                        + (
-                            f"\n\n**Attempted words:** {', '.join([f'`{letter}`' for letter in self.bot.configs[payload.guild_id]['games'][str(payload.channel_id)]['guesses']])}"
-                            if self.bot.configs[payload.guild_id]["games"][
-                                str(payload.channel_id)
-                            ]["guesses"]
-                            else ""
-                        )
-                        + f"\n\n{hm_images[self.bot.configs[payload.guild_id]['games'][str(payload.channel_id)]['level']]}\n\n**The word is in `{'English' if self.bot.configs[payload.guild_id]['games'][str(payload.channel_id)]['language'] == 0 else 'French'}`**"
-                    )
+                    em.description += f"\n\n**WORD TO GUESS:** `{' '.join([guesses[x] if self.bot.configs[payload.guild_id]['games'][str(payload.channel_id)]['normal_words'][x] != letter else letter for x in range(len(self.bot.configs[payload.guild_id]['games'][str(payload.channel_id)]['words']))])}`"
                 else:
                     await channel.send(
                         f"❌ - YOU LOST! THE WORD WASN'T GUESSED, THE WORD WAS: `{self.bot.configs[payload.guild_id]['games'][str(payload.channel_id)]['words']}`! - ❌"
                     )
-                    await message.edit(
-                        content=f"💬 - **HANGMAN GAME** - 💬\n\n**PARTICIPANT{'S' if len(self.bot.configs[payload.guild_id]['games'][str(payload.channel_id)]['players']) > 1 else ''}:** {', '.join([f'`{member.name}`' for member in self.bot.configs[payload.guild_id]['games'][str(payload.channel_id)]['players'].values()]) if not self.bot.configs[payload.guild_id]['games'][str(payload.channel_id)]['all'] else '`All members of the server`'}\n\n**THE WORD HASN'T BEEN GUESSED:** `{' '.join([guesses[x] for x in range(len(self.bot.configs[payload.guild_id]['games'][str(payload.channel_id)]['words']))])}`\n\n**THE WORD WAS:** `{self.bot.configs[payload.guild_id]['games'][str(payload.channel_id)]['words']}`\n\n**Characters used:** {', '.join([f'`{letter}`' for letter in self.bot.configs[payload.guild_id]['games'][str(payload.channel_id)]['chars']])}"
-                        + (
-                            f"\n\n**Attempted words:** {', '.join([f'`{letter}`' for letter in self.bot.configs[payload.guild_id]['games'][str(payload.channel_id)]['guesses']])}"
-                            if self.bot.configs[payload.guild_id]["games"][
+                    em.description += f"\n\n**THE WORD HASN'T BEEN GUESSED:** `{' '.join([guesses[x] for x in range(len(self.bot.configs[payload.guild_id]['games'][str(payload.channel_id)]['words']))])}`\n\n**THE WORD WAS:** `{self.bot.configs[payload.guild_id]['games'][str(payload.channel_id)]['words']}`"
+
+                em.add_field(
+                    name="**CHARACTERS USED:**",
+                    value=", ".join(
+                        [
+                            f"`{letter}`"
+                            for letter in self.bot.configs[payload.guild_id]["games"][
                                 str(payload.channel_id)
-                            ]["guesses"]
-                            else ""
-                        )
-                        + f"\n\n{hm_images[self.bot.configs[payload.guild_id]['games'][str(payload.channel_id)]['level']]}\n\n**The word is in `{'English' if self.bot.configs[payload.guild_id]['games'][str(payload.channel_id)]['language'] == 0 else 'French'}`**"
+                            ]["chars"]
+                        ]
+                    ),
+                )
+
+                if self.bot.configs[payload.guild_id]["games"][str(payload.channel_id)][
+                    "guesses"
+                ]:
+                    em.add_field(
+                        name="**ATTEMPTED WORDS:**",
+                        value=", ".join(
+                            [
+                                f"`{letter}`"
+                                for letter in self.bot.configs[payload.guild_id][
+                                    "games"
+                                ][str(payload.channel_id)]["guesses"]
+                            ]
+                        ),
                     )
 
+                em.set_thumbnail(
+                    url=hm_images[
+                        self.bot.configs[payload.guild_id]["games"][
+                            str(payload.channel_id)
+                        ]["level"]
+                    ]
+                )
+
+                em.description += "\n** **"
+                await message.edit(embed=em)
                 await message.clear_reaction(reaction)
 
                 if (
