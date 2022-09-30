@@ -2,7 +2,7 @@ from asyncio import sleep
 from random import choice
 
 from disnake import (
-    ApplicationCommandInteraction,
+    GuildCommandInteraction,
     Member,
     PermissionOverwrite,
 )
@@ -27,14 +27,14 @@ class FourInARow(Cog, name="misc.fourinarow"):
     )
     @max_concurrency(1, BucketType.member)
     async def game_fourinarow_slash_command(
-        self, inter: ApplicationCommandInteraction, member: Member
+        self, inter: GuildCommandInteraction, member: Member
     ):
         """
         This slash command starts a four in a row game against another guild member
 
         Parameters
         ----------
-        inter: :class:`disnake.ext.commands.ApplicationCommandInteraction`
+        inter: :class:`disnake.ext.commands.GuildCommandInteraction`
             The application command interaction
         member: :class:`disnake.Member`
             The member to play against

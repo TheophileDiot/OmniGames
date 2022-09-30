@@ -19,6 +19,7 @@ from disnake import (
 from disnake.ext.commands import check
 from disnake.ext.commands.errors import BadArgument
 from disnake.ext.tasks import loop
+from disnake.ui import View
 
 from bot import OmniGames
 
@@ -91,50 +92,6 @@ def check_for_win_fourinarow(board) -> bool:
                     return True
 
     return False
-
-
-def check_for_win_tictactoe(board: list) -> Optional[bool]:
-    win = (
-        board[0][0] == board[0][1]
-        and board[0][1] == board[0][2]
-        or board[1][0] == board[0][1]
-        and board[0][1] == board[0][2]
-        or board[2][0] == board[2][1]
-        and board[2][1] == board[2][2]
-        or board[0][0] == board[1][0]
-        and board[1][0] == board[2][0]
-        or board[0][1] == board[1][1]
-        and board[1][1] == board[2][1]
-        or board[0][2] == board[1][2]
-        and board[1][2] == board[2][2]
-        or board[0][0] == board[1][1]
-        and board[1][1] == board[2][2]
-        or board[0][2] == board[1][1]
-        and board[1][1] == board[2][0]
-    )
-
-    if not win:
-        return None
-    else:
-        return True
-
-
-def check_for_win_rockpaperscissors(player_1: str, player_2: str) -> Optional[int]:
-    if player_1 == player_2:
-        return None
-    else:
-        if player_1 == "🪨" and player_2 == "📄":
-            return 1
-        elif player_1 == "🪨" and player_2 == "✂️":
-            return 0
-        elif player_1 == "📄" and player_2 == "🪨":
-            return 0
-        elif player_1 == "📄" and player_2 == "✂️":
-            return 1
-        elif player_1 == "✂️" and player_2 == "🪨":
-            return 1
-        elif player_1 == "✂️" and player_2 == "📄":
-            return 0
 
 
 class Utils:
@@ -357,6 +314,14 @@ class Utils:
             bot.configs[guild.id]["games_category"] = guild.get_channel(
                 int(games_category)
             )
+
+        """ MUSIC MISC """
+
+        bot.playlists[guild.id] = []
+
+        bot.djs[guild.id] = [
+            int(k) for k in bot.config_repo.get_djs(guild.id).keys()
+        ]  # Initialize djs list for every guilds
 
         """ GAMES """
 

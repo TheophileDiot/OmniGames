@@ -386,34 +386,7 @@ class Events(Cog, name="events.on_raw_reaction_add"):
                     .replace("$", " ")
                 ]
 
-                em = Embed(
-                    color=self.bot.color,
-                    title="💬 - **HANGMAN GAME** - 💬",
-                    description=f"**PARTICIPANT{'S' if len(self.bot.configs[payload.guild_id]['games'][str(payload.channel_id)]['players']) > 1 else ''}:** {', '.join([f'`{member.name}`' for member in self.bot.configs[payload.guild_id]['games'][str(payload.channel_id)]['players'].values()]) if not self.bot.configs[payload.guild_id]['games'][str(payload.channel_id)]['all'] else '`All server members`'}",
-                )
-
-                if (
-                    "author"
-                    in self.bot.configs[payload.guild_id]["games"][
-                        str(payload.channel_id)
-                    ]
-                    and self.bot.configs[payload.guild_id]["games"][
-                        str(payload.channel_id)
-                    ]["author"]
-                    and self.bot.configs[payload.guild_id]["games"][
-                        str(payload.channel_id)
-                    ]["author"].avatar
-                ):
-                    em.set_author(
-                        name=f"{self.bot.configs[payload.guild_id]['games'][str(payload.channel_id)]['author']}",
-                        icon_url=self.bot.configs[payload.guild_id]["games"][
-                            str(payload.channel_id)
-                        ]["author"].avatar.url,
-                    )
-                else:
-                    em.set_author(
-                        name=f"{self.bot.configs[payload.guild_id]['games'][str(payload.channel_id)]['author']}"
-                    )
+                await message.clear_reaction(reaction)
 
                 if (
                     self.bot.configs[payload.guild_id]["games"][
@@ -454,18 +427,8 @@ class Events(Cog, name="events.on_raw_reaction_add"):
                             ]
                         ),
                     )
-
-                em.set_thumbnail(
-                    url=hm_images[
-                        self.bot.configs[payload.guild_id]["games"][
-                            str(payload.channel_id)
-                        ]["level"]
-                    ]
-                )
-
-                em.description += "\n** **"
-                await message.edit(embed=em)
-                await message.clear_reaction(reaction)
+                    await message.clear_reactions()
+                    await message.add_reaction("💥")
 
                 if (
                     len(

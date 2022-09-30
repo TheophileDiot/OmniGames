@@ -1,0 +1,23 @@
+version: "3"
+
+services:
+  bot:
+    build:
+      context: .
+      dockerfile: DockerFile
+    container_name: omnigames-bot
+    volumes:
+      - ./logs:/bot/logs
+      - ./temp:/bot/temp
+    environment:
+      - PYTHONUNBUFFERED=1
+    restart: always
+    depends_on:
+      - lavalink
+
+  lavalink:
+    build: lavalink
+    container_name: omnigames-lavalink
+    restart: always
+    volumes:
+      - ./lavalink/logs:/opt/Lavalink/logs

@@ -5,3 +5,5 @@ env/
 .env
 .cache
 count_lines.py
+lavalink/logs/**
+.vscode

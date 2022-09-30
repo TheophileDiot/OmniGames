@@ -1,11 +1,10 @@
 from asyncio import sleep
-from hashlib import pbkdf2_hmac
 from unicodedata import normalize
 from typing import List
 
 from disnake import (
-    ApplicationCommandInteraction,
     Enum,
+    GuildCommandInteraction,
     Member,
     PermissionOverwrite,
 )
@@ -53,14 +52,14 @@ class Hangman(Cog, name="misc.hangman"):
     )
     async def hangman_slash_command_group(
         self,
-        inter: ApplicationCommandInteraction,
+        inter: GuildCommandInteraction,
     ):
         """
         This slash command group manages the hangman game
 
         Parameters
         ----------
-        inter: :class:`disnake.ext.commands.ApplicationCommandInteraction`
+        inter: :class:`disnake.ext.commands.GuildCommandInteraction`
             The application command interaction
         """
         if not await self.bot.utils_class.check_games_category(inter):
@@ -75,7 +74,7 @@ class Hangman(Cog, name="misc.hangman"):
     @max_concurrency(1, BucketType.channel)
     async def hangman_guess_slash_command(
         self,
-        inter: ApplicationCommandInteraction,
+        inter: GuildCommandInteraction,
         word: str,
     ):
         """
@@ -83,7 +82,7 @@ class Hangman(Cog, name="misc.hangman"):
 
         Parameters
         ----------
-        inter: :class:`disnake.ext.commands.ApplicationCommandInteraction`
+        inter: :class:`disnake.ext.commands.GuildCommandInteraction`
             The application command interaction
         word: :class:`str`
             The word to guess
@@ -161,6 +160,8 @@ class Hangman(Cog, name="misc.hangman"):
             await inter.response.send_message(
                 f"✅ - VICTORY! THE WORD WAS GUESSED BY {inter.author}, THE WORD WAS: `{self.bot.configs[inter.guild.id]['games'][str(inter.channel.id)]['words']}`! - ✅"
             )
+            await message.clear_reactions()
+            await message.add_reaction("💥")
         else:
             self.bot.configs[inter.guild.id]["games"][str(inter.channel.id)][
                 "level"
@@ -177,6 +178,8 @@ class Hangman(Cog, name="misc.hangman"):
             await inter.response.send_message(
                 f"ℹ️ - WRONG! `{inter.author.name}` tried guessing the word `{guess}` - ℹ️"
             )
+            await message.clear_reactions()
+            await message.add_reaction("💥")
 
         msg_guesses = message.clean_content.split("\n")[4]
         guesses = [
@@ -212,7 +215,7 @@ class Hangman(Cog, name="misc.hangman"):
     @max_concurrency(1, BucketType.member)
     async def hangman_create_slash_command(
         self,
-        inter: ApplicationCommandInteraction,
+        inter: GuildCommandInteraction,
         members: List[Member] = Param(None, converter=Utils.members_converter),
         all_members: bool = False,
         random: bool = False,
@@ -225,7 +228,7 @@ class Hangman(Cog, name="misc.hangman"):
 
         Parameters
         ----------
-        inter: :class:`disnake.ext.commands.ApplicationCommandInteraction`
+        inter: :class:`disnake.ext.commands.GuildCommandInteraction`
             The application command interaction
         members: :class:`typing.List[disnake.Member]`
             The members to play against

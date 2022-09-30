@@ -80,3 +80,24 @@ class Games:
     @Utils.resolve_guild_path
     def get_game_channels(self, guild_id: int) -> OrderedDict:
         return self.model.get(f"{self.path}")
+
+    def update_monopoly_game(self, channel_id: str, file_obj) -> None:
+        return self.model.upload(f"monopoly_{channel_id}.jpg", file_obj)
+
+    def download_monopoly_game(self, channel_id: str) -> bytes:
+        return self.model.download(f"monopoly_{channel_id}.jpg")
+
+    def delete_monopoly_game(self, channel_id: str):
+        return self.model.delete_storage(f"monopoly_{channel_id}.jpg")
+
+    def download_default_monopoly_game(self) -> bytes:
+        return self.model.download("monopoly-classic-board.jpg")
+
+    def download_default_monopoly_avatar(self) -> bytes:
+        return self.model.download("monopoly_default_avatar.png")
+
+    def download_monopoly_green_house(self) -> bytes:
+        return self.model.download("green_house.png")
+
+    def download_monopoly_hotel(self) -> bytes:
+        return self.model.download("hotel.png")
